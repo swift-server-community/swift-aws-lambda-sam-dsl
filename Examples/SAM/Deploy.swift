@@ -17,14 +17,6 @@ DeploymentDescriptor {
   // an optional description
   "Description of this deployment descriptor"
 
-  GenericResource(
-  """
-     QueueSwiftLambdaQueueName:
-      Type: AWS::SQS::Queue
-      Properties:
-         QueueName: swift-lambda-queue-name
-  """)
-
   // Create a lambda function exposed through a REST API
   Function(name: "HttpApiLambda") {
 

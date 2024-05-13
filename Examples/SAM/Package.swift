@@ -1,4 +1,4 @@
-// swift-tools-version:5.7
+// swift-tools-version:5.9
 
 // ===----------------------------------------------------------------------===//
 //
@@ -19,7 +19,7 @@ import PackageDescription
 let package = Package(
   name: "swift-aws-lambda-runtime-example",
   platforms: [
-    .macOS(.v12)
+    .macOS(.v14)
   ],
   products: [
     .executable(name: "HttpApiLambda", targets: ["HttpApiLambda"]),
@@ -27,9 +27,11 @@ let package = Package(
     .executable(name: "UrlLambda", targets: ["UrlLambda"])
   ],
   dependencies: [
-        .package(url: "https://github.com/swift-server/swift-aws-lambda-runtime", branch: "main"),
         .package(url: "https://github.com/swift-server/swift-aws-lambda-events", branch: "main"),
-        .package(url: "../../../swift-aws-lambda-sam-dsl", branch: "main"),
+        .package(url: "https://github.com/swift-server/swift-aws-lambda-runtime", branch: "main"),
+        // .package(url: "../../../swift-aws-lambda-runtime", branch: "sebsto/use_local_deps"), // to have the LAMBDA_USE_LOCAL_DEPS env var on plugin archive
+        .package(name: "swift-aws-lambda-sam-dsl", path: "../.."),
+
   ],
   targets: [
     .executableTarget(
