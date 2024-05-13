@@ -1,4 +1,4 @@
-This PR shows proof-of-concept code to add a deployer plugin, in addition to the existing archiver plugin. The deployer plugin generates a SAM deployment descriptor and calls the SAM command line to deploy the lambda function and it's dependencies.
+This repo shows proof-of-concept code to add a deployer plugin to the [AWS Lambda Runtime for Swift](https://github.com/swift-server/swift-aws-lambda-runtime), in addition to the existing archiver plugin. The deployer plugin generates a SAM deployment descriptor and calls the SAM command line to deploy the lambda function and it's dependencies.
 
 ## Motivation
 
