@@ -1,0 +1,11 @@
+.DS_Store
+*.build
+/.xcodeproj
+*.pem
+.podspecs
+.swiftpm
+.swift-version
+xcuserdata
+Package.resolved
+.serverless
+.vscode
