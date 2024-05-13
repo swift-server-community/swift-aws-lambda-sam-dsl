@@ -5,21 +5,16 @@ import PackageDescription
 let package = Package(
     name: "swift-aws-lambda-sam-dsl",
     platforms: [
-        .macOS(.v12),
-        .iOS(.v15),
-        .tvOS(.v15),
-        .watchOS(.v8),
+        .macOS(.v14),
     ],
     products: [
+        // SwiftPM plugin to deploy a SAM Lambda function
         .plugin(name: "AWSLambdaDeployer", targets: ["AWSLambdaDeployer"]),
 
         // Shared Library to generate a SAM deployment descriptor
         .library(name: "AWSLambdaDeploymentDescriptor", type: .dynamic, targets: ["AWSLambdaDeploymentDescriptor"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/swift-server/swift-aws-lambda-runtime", branch: "main"),
-        .package(url: "https://github.com/swift-server/swift-aws-lambda-events", branch: "main"),    
-        .package(url: "https://github.com/apple/swift-log.git", .upToNextMajor(from: "1.4.2")),
     ],
     targets: [
         .target(
