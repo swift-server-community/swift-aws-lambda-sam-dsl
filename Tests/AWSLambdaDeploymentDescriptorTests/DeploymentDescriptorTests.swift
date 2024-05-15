@@ -481,7 +481,7 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
         let yaml = try YAMLEncoder().encode(arn)
 
         // then
-        XCTAssertEqual(String(data: yaml, encoding: .utf8), arn?.arn)
+        XCTAssertEqual(String(decoding: yaml, as: UTF8.self), arn?.arn)
     }
 
     func testArnOK() {

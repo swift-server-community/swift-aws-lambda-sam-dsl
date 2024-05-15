@@ -37,7 +37,7 @@ struct Utils {
             outputSync.enter()
             defer { outputSync.leave() }
 
-            guard let _output = data.flatMap({ String(data: $0, encoding: .utf8)?.trimmingCharacters(in: CharacterSet(["\n"])) }), !_output.isEmpty else {
+            guard let _output = data.flatMap({ String(decoding: $0, as: UTF8.self).trimmingCharacters(in: CharacterSet(["\n"])) }), !_output.isEmpty else {
                 return
             }
 

@@ -826,15 +826,15 @@ extension SAMDeploymentDescriptor {
             encoder.outputFormatting = [encoder.outputFormatting, .prettyPrinted]
         }
         let jsonData = try! encoder.encode(self)
-        return String(data: jsonData, encoding: .utf8)!
+        return String(decoding: jsonData, as: UTF8.self)
     }
 
     internal func toYAML() -> String {
         let encoder = YAMLEncoder()
         encoder.keyEncodingStrategy = .camelCase
-        let yaml = try! encoder.encode(self)
+        let yamlData = try! encoder.encode(self)
 
-        return String(data: yaml, encoding: .utf8)!
+        return String(decoding: yamlData, as: UTF8.self)
     }
 }
 

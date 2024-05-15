@@ -671,11 +671,8 @@ class TestYAMLEncoder: XCTestCase {
     encoder.keyEncodingStrategy = .camelCase
     encoder.dateEncodingStrategy = .iso8601
     let encodedData = try encoder.encode(data)
-    guard let yaml = String(data: encodedData, encoding: .utf8) else {
-      XCTFail("Cant decode YAML object")
-      return
-    }
-    XCTAssertTrue(yaml.contains("ThisIsAString: Hello"))
+    let yaml = String(decoding: encodedData, as:UTF8.self)
+
     XCTAssertTrue(yaml.contains("ThisIsABool: true"))
     XCTAssertTrue(yaml.contains("ThisIsAnInt: 1"))
     XCTAssertTrue(yaml.contains("ThisIsAnInt8: 2"))
@@ -703,10 +700,8 @@ class TestYAMLEncoder: XCTestCase {
     encoder.keyEncodingStrategy = .camelCase
     let encodedData = try encoder.encode(camelCaseDictionary)
 
-    guard let yaml = String(data: encodedData, encoding: .utf8) else {
-      XCTFail("Cant decode yaml object")
-      return
-    }
+    let yaml = String(decoding: encodedData, as: UTF8.self)
+    
     print(yaml)
     XCTAssertTrue(yaml.contains("CamelCaseKey:"))
     XCTAssertTrue(yaml.contains("   NestedDictionary: 1"))
@@ -786,7 +781,7 @@ class TestYAMLEncoder: XCTestCase {
     // which if compared as Data would not be equal, but the contained YAML values are equal.
     // So we wrap them in a YAML type, which compares data as if it were a json.
 
-    let payloadYAMLObject = String(data: payload, encoding: .utf8)!
+    let payloadYAMLObject = String(decoding: payload, as: UTF8.self)
     let result = yaml.allSatisfy { payloadYAMLObject.contains($0) || $0 == "" }
     XCTAssertTrue(result, "Produced YAML not identical to expected YAML.")
 

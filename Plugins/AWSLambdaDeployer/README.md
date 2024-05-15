@@ -56,7 +56,7 @@ struct HttpApiLambda: SimpleLambdaHandler {
 
       // echo the request in the response
       let data = try JSONEncoder().encode(event)
-      let response = String(data: data, encoding: .utf8)
+      let response = String(decoding: data, as: UTF8.self)
 
       return Output(statusCode: .accepted, headers: header, body: response)
 
