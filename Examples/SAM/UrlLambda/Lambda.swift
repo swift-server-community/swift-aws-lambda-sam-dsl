@@ -37,7 +37,7 @@ struct UrlLambda: LambdaHandler {
 
       // echo the request in the response
       let data = try JSONEncoder().encode(event)
-      let response = String(data: data, encoding: .utf8)
+      let response = String(decoding: data, as: UTF8.self)
 
       // if you want control on the status code and headers, return an APIGatewayV2Response
       // otherwise, just return any Encodable struct, the runtime will wrap it for you
