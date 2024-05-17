@@ -13,7 +13,25 @@
     "vegetables": {
       "type": "array",
       "items": { "$ref": "#/definitions/veggie" }
-    }
+    },
+    "testArrayMultipleTypes": {
+      "type": "array",
+      "items": {
+        "type": ["string", "boolean"]
+      }
+    },  
+    "testAnyOfArrayItem": {
+      "anyOf": [
+        {
+          "type": [
+            "string"
+          ]
+        },
+        {
+          "$ref": "#/definitions/AWS::Serverless::Api.S3Location"
+        }
+      ]
+    }      
   },
   "definitions": {
     "veggie": {

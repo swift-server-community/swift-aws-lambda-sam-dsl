@@ -34,11 +34,24 @@ final class JSONSchemaReaderTest: XCTestCase {
 //        print(schema)
         
         XCTAssertTrue(schema.type == .object)
-        XCTAssertTrue(schema.properties?.count == 2)
+        XCTAssertTrue(schema.properties?.count == 4)
         let fruits = try XCTUnwrap(schema.properties?["fruits"])
         XCTAssertTrue(fruits.jsonType().type == .array)
-        XCTAssertTrue(fruits.jsonType().items == ArrayItem.type(.string))
+        XCTAssertTrue(fruits.jsonType().items == ArrayItem.singleType(.string))
         
+        let testArrayMultipleTypes = try XCTUnwrap(schema.properties?["testArrayMultipleTypes"])
+        XCTAssertTrue(testArrayMultipleTypes.jsonType().items == ArrayItem.multipleTypes([.string, .boolean]))
+        
+        let testAnyOfArrayItem = try XCTUnwrap(schema.properties?["testAnyOfArrayItem"])
+        if case .anyOfArrayItem(let ai) = testAnyOfArrayItem {
+            XCTAssertTrue(ai.count == 2)
+            XCTAssertTrue(ai[0] == ArrayItem.multipleTypes([.string]))
+            XCTAssertTrue(ai[1] == ArrayItem.ref("#/definitions/AWS::Serverless::Api.S3Location"))
+        } else {
+            XCTFail("Not an [ArrayItem]")
+        }
+
+
         let vegetable = try XCTUnwrap(schema.properties?["vegetables"])
         XCTAssertTrue(vegetable.jsonType().items == ArrayItem.ref("#/definitions/veggie"))
         

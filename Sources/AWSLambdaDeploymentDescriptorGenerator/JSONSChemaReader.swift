@@ -52,7 +52,8 @@ enum JSONPrimitiveType: Decodable, Equatable {
 // TODO change to a struct to support pattern ?
 
 enum ArrayItem: Decodable, Equatable {
-    case type(JSONPrimitiveType)
+    case singleType(JSONPrimitiveType)
+    case multipleTypes([JSONPrimitiveType])
     case ref(String)
     
     enum CodingKeys: String, CodingKey {
@@ -67,8 +68,13 @@ enum ArrayItem: Decodable, Equatable {
         }
         switch onlyKey {
         case .type:
-            let primitiveType = try container.decode(JSONPrimitiveType.self, forKey: .type)
-            self = .type(primitiveType)
+            if let primitiveType = try? container.decode(JSONPrimitiveType.self, forKey: .type) {
+                self = .singleType(primitiveType)
+            } else {
+                let arrayOfPrimitiveType = try container.decode([JSONPrimitiveType].self, forKey: .type)
+                self = .multipleTypes(arrayOfPrimitiveType)
+            }
+            
         case .ref:
             let ref = try container.decode(String.self, forKey: .ref)
             self = .ref(ref)
@@ -78,6 +84,7 @@ enum ArrayItem: Decodable, Equatable {
 
 enum JSONUnionType: Decodable {
     case anyOf([JSONType])
+    case anyOfArrayItem([ArrayItem])
     case allOf([JSONType])
     case type(JSONType)
     
@@ -94,8 +101,12 @@ enum JSONUnionType: Decodable {
             switch onlyKey {
             case .allOf: fatalError("not yet implemented")
             case .anyOf:
-                let value = try container.decode(Array<JSONType>.self, forKey: .anyOf)
-                self = .anyOf(value)
+                if let value = try? container.decode(Array<JSONType>.self, forKey: .anyOf) {
+                    self = .anyOf(value)
+                } else {
+                    let value = try container.decode(Array<ArrayItem>.self, forKey: .anyOf)
+                    self = .anyOfArrayItem(value)
+                }
             }
         } else {
             // there is no anyOf or allOf key, the entry is a raw JSONType, without key
