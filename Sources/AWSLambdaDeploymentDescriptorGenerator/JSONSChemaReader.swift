@@ -1,10 +1,10 @@
 struct JSONSchema: Decodable {
-    let id: String
+    let id: String?
     let schema: String
-    let description: String
+    let description: String?
     let type: JSONPrimitiveType
-    let properties: [String: JSONType]?
-    let definitions: [String: JSONType]?
+    let properties: [String: JSONUnionType]?
+    let definitions: [String: JSONUnionType]?
     
     enum CodingKeys: String, CodingKey {
         case id = "$id"
@@ -49,6 +49,8 @@ enum JSONPrimitiveType: Decodable, Equatable {
     }
 }
 
+// TODO change to a struct to support pattern ?
+
 enum ArrayItem: Decodable, Equatable {
     case type(JSONPrimitiveType)
     case ref(String)
@@ -74,15 +76,54 @@ enum ArrayItem: Decodable, Equatable {
     }
 }
 
+enum JSONUnionType: Decodable {
+    case anyOf([JSONType])
+    case allOf([JSONType])
+    case type(JSONType)
+    
+    enum CodingKeys: String, CodingKey {
+        case anyOf
+        case allOf
+    }
+    
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        var allKeys = ArraySlice(container.allKeys)
+        if let onlyKey = allKeys.popFirst(), allKeys.isEmpty  {
+            // there is an anyOf or allOf key
+            switch onlyKey {
+            case .allOf: fatalError("not yet implemented")
+            case .anyOf:
+                let value = try container.decode(Array<JSONType>.self, forKey: .anyOf)
+                self = .anyOf(value)
+            }
+        } else {
+            // there is no anyOf or allOf key, the entry is a raw JSONType, without key
+            let container = try decoder.singleValueContainer()
+            let jsonType = try container.decode(JSONType.self)
+            self = .type(jsonType)
+        }
+    }
+    
+    func jsonType() -> JSONType {
+        guard case .type(let jsonType) = self else {
+            fatalError("not a JSONType")
+        }
+        
+        return jsonType
+    }
+}
+
 // TODO maybe convert this in an enum to cover all possible values of JSONPrimitiveType extensions
 struct JSONType: Decodable {
     let type: JSONPrimitiveType
     let required: [String]?
     let description: String?
+    let additionalProperties: Bool?
     
     // for Object
     // https://json-schema.org/understanding-json-schema/reference/object
-    let properties: [String: JSONType]?
+    let properties: [String: JSONUnionType]?
     
     // for String
     // https://json-schema.org/understanding-json-schema/reference/string
@@ -113,5 +154,6 @@ struct JSONType: Decodable {
         case required
         case description
         case properties
+        case additionalProperties
     }
 }

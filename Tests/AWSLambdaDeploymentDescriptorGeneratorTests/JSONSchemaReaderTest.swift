@@ -36,20 +36,20 @@ final class JSONSchemaReaderTest: XCTestCase {
         XCTAssertTrue(schema.type == .object)
         XCTAssertTrue(schema.properties?.count == 2)
         let fruits = try XCTUnwrap(schema.properties?["fruits"])
-        XCTAssertTrue(fruits.type == .array)
-        XCTAssertTrue(fruits.items == ArrayItem.type(.string))
+        XCTAssertTrue(fruits.jsonType().type == .array)
+        XCTAssertTrue(fruits.jsonType().items == ArrayItem.type(.string))
         
         let vegetable = try XCTUnwrap(schema.properties?["vegetables"])
-        XCTAssertTrue(vegetable.items == ArrayItem.ref("#/definitions/veggie"))
+        XCTAssertTrue(vegetable.jsonType().items == ArrayItem.ref("#/definitions/veggie"))
         
-        XCTAssertTrue(schema.definitions?.count == 1)
+        XCTAssertTrue(schema.definitions?.count == 2)
         let veggie = try XCTUnwrap(schema.definitions?["veggie"])
-        XCTAssertTrue(veggie.type == .object)
-        XCTAssertTrue(veggie.required?.count == 2)
-        let veggieName = try XCTUnwrap(veggie.properties?["veggieName"])
-        XCTAssertTrue(veggieName.type == .string)
-        let veggieLike = try XCTUnwrap(veggie.properties?["veggieLike"])
-        XCTAssertTrue(veggieLike.type == .boolean)
+        XCTAssertTrue(veggie.jsonType().type == .object)
+        XCTAssertTrue(veggie.jsonType().required?.count == 2)
+        let veggieName = try XCTUnwrap(veggie.jsonType().properties?["veggieName"])
+        XCTAssertTrue(veggieName.jsonType().type == .string)
+        let veggieLike = try XCTUnwrap(veggie.jsonType().properties?["veggieLike"])
+        XCTAssertTrue(veggieLike.jsonType().type == .boolean)
     }
 
     func testSAMJSONSchemaReader() throws {
