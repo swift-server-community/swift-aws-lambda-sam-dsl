@@ -127,7 +127,7 @@ final class DeploymentDescriptorBuilderTests: DeploymentDescriptorBaseTest {
                                                                expected: expected))
         
         // cleanup
-        XCTAssertNoThrow(try deleteTemporaryPackageFile(tempFile))
+        XCTAssertNoThrow(deleteTemporaryPackageFile(tempFile))
     }
     
     func testFunctionDescription() {

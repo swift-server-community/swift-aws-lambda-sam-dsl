@@ -29,7 +29,7 @@ class DeploymentDescriptorBaseTest: XCTestCase {
 
     override func tearDownWithError() throws {
         // delete the fake lambda package (silently ignore errors)
-        try self.deleteTemporaryPackageFile(self.codeURI)
+        self.deleteTemporaryPackageFile(self.codeURI)
         self.codeURI = nil
     }
     
