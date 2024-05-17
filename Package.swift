@@ -48,7 +48,9 @@ let package = Package(
                 .byName(name: "AWSLambdaDeploymentDescriptorGenerator"),
             ],
             // https://stackoverflow.com/questions/47177036/use-resources-in-unit-tests-with-swift-package-manager
-            resources: [.copy("Resources/SimpleJSONSchema.json")]
+            resources: [
+                .copy("Resources/SimpleJSONSchema.json"),
+                .copy("Resources/SAMJSONSchema.json")]
         ),
     ]
 )
