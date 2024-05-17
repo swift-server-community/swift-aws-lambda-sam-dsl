@@ -1,4 +1,4 @@
-// swift-tools-version:5.9
+// swift-tools-version:5.10
 
 import PackageDescription
 
@@ -21,6 +21,11 @@ let package = Package(
             name: "AWSLambdaDeploymentDescriptor",
             path: "Sources/AWSLambdaDeploymentDescriptor"
         ),
+        // SAM Deployment Descriptor Generator
+        .target(
+            name: "AWSLambdaDeploymentDescriptorGenerator",
+            path: "Sources/AWSLambdaDeploymentDescriptorGenerator"
+        ),
         .plugin(
             name: "AWSLambdaDeployer",
             capability: .command(
@@ -31,8 +36,19 @@ let package = Package(
 //                permissions: [.writeToPackageDirectory(reason: "This plugin generates a SAM template to describe your deployment")]
             )
         ),
-        .testTarget(name: "AWSLambdaDeploymentDescriptorTests", dependencies: [
-            .byName(name: "AWSLambdaDeploymentDescriptor"),
-        ]),
+        .testTarget(
+            name: "AWSLambdaDeploymentDescriptorTests",
+            dependencies: [
+                .byName(name: "AWSLambdaDeploymentDescriptor"),
+            ]
+        ),
+        .testTarget(
+            name: "AWSLambdaDeploymentDescriptorGeneratorTests",
+            dependencies: [
+                .byName(name: "AWSLambdaDeploymentDescriptorGenerator"),
+            ],
+            // https://stackoverflow.com/questions/47177036/use-resources-in-unit-tests-with-swift-package-manager
+            resources: [.copy("Resources/SimpleJSONSchema.json")]
+        ),
     ]
 )
