@@ -52,4 +52,21 @@ final class JSONSchemaReaderTest: XCTestCase {
         XCTAssertTrue(veggieLike.type == .boolean)
     }
 
+    func testSAMJSONSchemaReader() throws {
+        
+        // load schema from file (the file must be referenced in the Resource section of Package.swift
+        // https://stackoverflow.com/questions/47177036/use-resources-in-unit-tests-with-swift-package-manager
+        let filePath = Bundle.module.path(forResource: "SAMJSONSchema", ofType: "json")
+        let fp = try XCTUnwrap(filePath)
+        let url = URL(fileURLWithPath: fp)        
+        
+        let schemaData = try Data(contentsOf: url)
+
+        let decoder = JSONDecoder()
+        let schema = try decoder.decode(JSONSchema.self, from: schemaData)
+        print(schema)
+
+        // TODO : validate a couple of assertions here (not all)
+    }
+
 }
