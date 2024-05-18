@@ -96,6 +96,7 @@ enum JSONUnionType: Decodable {
         }
     }
     
+    // convenience function to extract a JSONType from this enum
     func jsonType() -> JSONType {
         guard case .type(let jsonType) = self else {
             fatalError("not a JSONType")
@@ -105,7 +106,6 @@ enum JSONUnionType: Decodable {
     }
 }
 
-// TODO: ? maybe convert this in an enum to cover all possible values of JSONPrimitiveType extensions
 struct JSONType: Decodable {
     // most type are single value, but sometimes it's an array
     /*
@@ -160,14 +160,8 @@ struct JSONType: Decodable {
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
-        // first try to decode a single value
-        if let type = try? container.decodeIfPresent(JSONPrimitiveType.self, forKey: .type) {
-            // and store it as an array
-            self.type = [type]
-        } else {
-            // if it doesn't work, try to decode an array
-            self.type = try container.decodeIfPresent(Array<JSONPrimitiveType>.self, forKey: .type)
-        }
+        // check if this is a single value or an array
+        self.type = try singleorMultipleValueArray(in: container, forKey: .type)
         
         self.items = try container.decodeIfPresent(ArrayItem.self, forKey: .items)
         self.pattern = try container.decodeIfPresent(String.self, forKey: .pattern)
@@ -187,31 +181,44 @@ struct JSONType: Decodable {
 enum ArrayItem: Decodable, Equatable {
     case type([JSONPrimitiveType])
     case ref(String)
-//    case properties([JSONType])  used in AllOf
     
     enum CodingKeys: String, CodingKey {
         case type
         case ref = "$ref"
-//        case properties
     }
+    
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        // extract the one and only key in this containers (either type or ref)
         var allKeys = ArraySlice(container.allKeys)
         guard let onlyKey = allKeys.popFirst(), allKeys.isEmpty else {
             throw DecodingError.typeMismatch(ArrayItem.self, DecodingError.Context.init(codingPath: container.codingPath, debugDescription: "Invalid number of keys found, expected one, found \(allKeys.count).", underlyingError: nil))
         }
+        
         switch onlyKey {
         case .type:
-            if let primitiveType = try? container.decode(JSONPrimitiveType.self, forKey: .type) {
-                self = .type([primitiveType])
-            } else {
-                let arrayOfPrimitiveType = try container.decode([JSONPrimitiveType].self, forKey: .type)
-                self = .type(arrayOfPrimitiveType)
-            }
-            
+            self = .type(try singleorMultipleValueArray(in: container, forKey: .type))
         case .ref:
             let ref = try container.decode(String.self, forKey: .ref)
             self = .ref(ref)
         }
     }
+}
+
+// to avoid having to code this at two different places
+fileprivate func singleorMultipleValueArray<T: CodingKey>(in container: KeyedDecodingContainer<T>, forKey key: T) throws -> [JSONPrimitiveType] {
+    let result: [JSONPrimitiveType]
+
+    // first try to decode a single value
+    if let primitiveType = try? container.decode(JSONPrimitiveType.self, forKey: key) {
+        // and store it as an array of one element
+        result = [primitiveType]
+    } else {
+        // if it doesn't work, try to decode an array
+        // if it doesn't work neither, this is a programming error, raise an exception
+        let arrayOfPrimitiveType = try container.decode([JSONPrimitiveType].self, forKey: key)
+        result = arrayOfPrimitiveType
+    }
+    return result
 }
