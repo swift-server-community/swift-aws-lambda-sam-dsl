@@ -36,16 +36,17 @@ final class JSONSchemaReaderTest: XCTestCase {
         XCTAssertTrue(schema.type == .object)
         XCTAssertTrue(schema.properties?.count == 4)
         let fruits = try XCTUnwrap(schema.properties?["fruits"])
-        XCTAssertTrue(fruits.jsonType().type.contains(.array))
-        XCTAssertTrue(fruits.jsonType().items == ArrayItem.singleType(.string))
+        let fruitType = try XCTUnwrap(fruits.jsonType().type)
+        XCTAssertTrue(fruitType.contains(.array))
+        XCTAssertTrue(fruits.jsonType().items == ArrayItem.type([.string]))
         
         let testArrayMultipleTypes = try XCTUnwrap(schema.properties?["testArrayMultipleTypes"])
-        XCTAssertTrue(testArrayMultipleTypes.jsonType().items == ArrayItem.multipleTypes([.string, .boolean]))
+        XCTAssertTrue(testArrayMultipleTypes.jsonType().items == ArrayItem.type([.string, .boolean]))
         
         let testAnyOfArrayItem = try XCTUnwrap(schema.properties?["testAnyOfArrayItem"])
         if case .anyOfArrayItem(let ai) = testAnyOfArrayItem {
             XCTAssertTrue(ai.count == 2)
-            XCTAssertTrue(ai[0] == ArrayItem.multipleTypes([.string]))
+            XCTAssertTrue(ai[0] == ArrayItem.type([.string]))
             XCTAssertTrue(ai[1] == ArrayItem.ref("#/definitions/AWS::Serverless::Api.S3Location"))
         } else {
             XCTFail("Not an [ArrayItem]")
@@ -57,12 +58,17 @@ final class JSONSchemaReaderTest: XCTestCase {
         
         XCTAssertTrue(schema.definitions?.count == 2)
         let veggie = try XCTUnwrap(schema.definitions?["veggie"])
-        XCTAssertTrue(veggie.jsonType().type.contains(.object))
+        let veggieType = try XCTUnwrap(veggie.jsonType().type)
+        XCTAssertTrue(veggieType.contains(.object))
         XCTAssertTrue(veggie.jsonType().required?.count == 2)
+        
         let veggieName = try XCTUnwrap(veggie.jsonType().properties?["veggieName"])
-        XCTAssertTrue(veggieName.jsonType().type.contains(.string))
+        let veggieNameType = try XCTUnwrap(veggieName.jsonType().type)
+        XCTAssertTrue(veggieNameType.contains(.string))
+        
         let veggieLike = try XCTUnwrap(veggie.jsonType().properties?["veggieLike"])
-        XCTAssertTrue(veggieLike.jsonType().type.contains(.boolean))
+        let veggieLikeType = try XCTUnwrap(veggieLike.jsonType().type)
+        XCTAssertTrue(veggieLikeType.contains(.boolean))
     }
 
     func testSAMJSONSchemaReader() throws {
