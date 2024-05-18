@@ -36,7 +36,7 @@ final class JSONSchemaReaderTest: XCTestCase {
         XCTAssertTrue(schema.type == .object)
         XCTAssertTrue(schema.properties?.count == 4)
         let fruits = try XCTUnwrap(schema.properties?["fruits"])
-        XCTAssertTrue(fruits.jsonType().type == .array)
+        XCTAssertTrue(fruits.jsonType().type.contains(.array))
         XCTAssertTrue(fruits.jsonType().items == ArrayItem.singleType(.string))
         
         let testArrayMultipleTypes = try XCTUnwrap(schema.properties?["testArrayMultipleTypes"])
@@ -57,12 +57,12 @@ final class JSONSchemaReaderTest: XCTestCase {
         
         XCTAssertTrue(schema.definitions?.count == 2)
         let veggie = try XCTUnwrap(schema.definitions?["veggie"])
-        XCTAssertTrue(veggie.jsonType().type == .object)
+        XCTAssertTrue(veggie.jsonType().type.contains(.object))
         XCTAssertTrue(veggie.jsonType().required?.count == 2)
         let veggieName = try XCTUnwrap(veggie.jsonType().properties?["veggieName"])
-        XCTAssertTrue(veggieName.jsonType().type == .string)
+        XCTAssertTrue(veggieName.jsonType().type.contains(.string))
         let veggieLike = try XCTUnwrap(veggie.jsonType().properties?["veggieLike"])
-        XCTAssertTrue(veggieLike.jsonType().type == .boolean)
+        XCTAssertTrue(veggieLike.jsonType().type.contains(.boolean))
     }
 
     func testSAMJSONSchemaReader() throws {
@@ -77,7 +77,7 @@ final class JSONSchemaReaderTest: XCTestCase {
 
         let decoder = JSONDecoder()
         let schema = try decoder.decode(JSONSchema.self, from: schemaData)
-        print(schema)
+//        print(schema)
 
         // TODO : validate a couple of assertions here (not all)
     }

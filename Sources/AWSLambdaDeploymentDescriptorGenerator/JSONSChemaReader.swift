@@ -49,44 +49,12 @@ enum JSONPrimitiveType: Decodable, Equatable {
     }
 }
 
-// TODO change to a struct to support pattern ?
-
-enum ArrayItem: Decodable, Equatable {
-    case singleType(JSONPrimitiveType)
-    case multipleTypes([JSONPrimitiveType])
-    case ref(String)
-    
-    enum CodingKeys: String, CodingKey {
-        case type
-        case ref = "$ref"
-    }
-    init(from decoder: any Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        var allKeys = ArraySlice(container.allKeys)
-        guard let onlyKey = allKeys.popFirst(), allKeys.isEmpty else {
-            throw DecodingError.typeMismatch(ArrayItem.self, DecodingError.Context.init(codingPath: container.codingPath, debugDescription: "Invalid number of keys found, expected one, found \(allKeys.count).", underlyingError: nil))
-        }
-        switch onlyKey {
-        case .type:
-            if let primitiveType = try? container.decode(JSONPrimitiveType.self, forKey: .type) {
-                self = .singleType(primitiveType)
-            } else {
-                let arrayOfPrimitiveType = try container.decode([JSONPrimitiveType].self, forKey: .type)
-                self = .multipleTypes(arrayOfPrimitiveType)
-            }
-            
-        case .ref:
-            let ref = try container.decode(String.self, forKey: .ref)
-            self = .ref(ref)
-        }
-    }
-}
-
 enum JSONUnionType: Decodable {
     case anyOf([JSONType])
     case anyOfArrayItem([ArrayItem])
     case allOf([JSONType])
     case type(JSONType)
+    case ref(String)
     
     enum CodingKeys: String, CodingKey {
         case anyOf
@@ -109,10 +77,20 @@ enum JSONUnionType: Decodable {
                 }
             }
         } else {
-            // there is no anyOf or allOf key, the entry is a raw JSONType, without key
+            // there is no anyOf or allOf key, the entry has no key and is either
+            // - a raw JSONType
+            // - a ref to another type : "$ref" : "path/to/other/path" (which is decoded as `ArrayItem`
             let container = try decoder.singleValueContainer()
-            let jsonType = try container.decode(JSONType.self)
-            self = .type(jsonType)
+            if let jsonType = try? container.decode(JSONType.self) {
+                self = .type(jsonType)
+            } else {
+                let ref = try container.decode(ArrayItem.self)
+                guard case .ref(let s) = ref else {
+                    throw DecodingError.typeMismatch(ArrayItem.self, DecodingError.Context.init(codingPath: container.codingPath, debugDescription: "This key has no JSONType no Ref. Expecting an ArrayItem for: \(ref)", underlyingError: nil))
+                }
+                self = .ref(s)
+            }
+            
         }
     }
     
@@ -125,9 +103,18 @@ enum JSONUnionType: Decodable {
     }
 }
 
-// TODO maybe convert this in an enum to cover all possible values of JSONPrimitiveType extensions
+// TODO: ? maybe convert this in an enum to cover all possible values of JSONPrimitiveType extensions
 struct JSONType: Decodable {
-    let type: JSONPrimitiveType
+    // most type are single value, but sometimes it's an array
+    /*
+     "type": "string"
+     
+     "type": [
+       "string",
+       "boolean"
+     ]
+     */
+    let type: [JSONPrimitiveType]
     let required: [String]?
     let description: String?
     let additionalProperties: Bool?
@@ -166,5 +153,60 @@ struct JSONType: Decodable {
         case description
         case properties
         case additionalProperties
+    }
+    
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        // first try to decode a single value
+        if let type = try? container.decode(JSONPrimitiveType.self, forKey: .type) {
+            // and store it as an array
+            self.type = [type]
+        } else {
+            // if it doesn't work, try to decode an array
+            self.type = try container.decode(Array<JSONPrimitiveType>.self, forKey: .type)
+        }
+        
+        self.items = try container.decodeIfPresent(ArrayItem.self, forKey: .items)
+        self.pattern = try container.decodeIfPresent(String.self, forKey: .pattern)
+        self.required = try container.decodeIfPresent([String].self, forKey: .required)
+        self.description = try container.decodeIfPresent(String.self, forKey: .description)
+        self.properties = try container.decodeIfPresent([String : JSONUnionType].self, forKey: .properties)
+        self.additionalProperties = try container.decodeIfPresent(Bool.self, forKey: .additionalProperties)
+    }
+}
+
+/*
+ Represents an `items` type that is present when the JSON primitive type is "array"
+ */
+// TODO change to a struct to support pattern ?
+enum ArrayItem: Decodable, Equatable {
+    case singleType(JSONPrimitiveType)
+    case multipleTypes([JSONPrimitiveType])
+    case ref(String)
+    
+    enum CodingKeys: String, CodingKey {
+        case type
+        case ref = "$ref"
+    }
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        var allKeys = ArraySlice(container.allKeys)
+        guard let onlyKey = allKeys.popFirst(), allKeys.isEmpty else {
+            throw DecodingError.typeMismatch(ArrayItem.self, DecodingError.Context.init(codingPath: container.codingPath, debugDescription: "Invalid number of keys found, expected one, found \(allKeys.count).", underlyingError: nil))
+        }
+        switch onlyKey {
+        case .type:
+            if let primitiveType = try? container.decode(JSONPrimitiveType.self, forKey: .type) {
+                self = .singleType(primitiveType)
+            } else {
+                let arrayOfPrimitiveType = try container.decode([JSONPrimitiveType].self, forKey: .type)
+                self = .multipleTypes(arrayOfPrimitiveType)
+            }
+            
+        case .ref:
+            let ref = try container.decode(String.self, forKey: .ref)
+            self = .ref(ref)
+        }
     }
 }
