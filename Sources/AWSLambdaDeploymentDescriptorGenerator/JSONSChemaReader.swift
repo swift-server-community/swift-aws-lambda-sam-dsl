@@ -52,7 +52,7 @@ enum JSONPrimitiveType: Decodable, Equatable {
 enum JSONUnionType: Decodable {
     case anyOf([JSONType])
     case anyOfArrayItem([ArrayItem])
-    case allOf([JSONType])
+    case allOf([JSONUnionType])
     case type(JSONType)
     case ref(String)
     
@@ -67,7 +67,9 @@ enum JSONUnionType: Decodable {
         if let onlyKey = allKeys.popFirst(), allKeys.isEmpty  {
             // there is an anyOf or allOf key
             switch onlyKey {
-            case .allOf: fatalError("not yet implemented")
+            case .allOf:
+                let value = try container.decode(Array<JSONUnionType>.self, forKey: .allOf)
+                self = .allOf(value)
             case .anyOf:
                 if let value = try? container.decode(Array<JSONType>.self, forKey: .anyOf) {
                     self = .anyOf(value)
@@ -114,7 +116,7 @@ struct JSONType: Decodable {
        "boolean"
      ]
      */
-    let type: [JSONPrimitiveType]
+    let type: [JSONPrimitiveType]?
     let required: [String]?
     let description: String?
     let additionalProperties: Bool?
@@ -159,12 +161,12 @@ struct JSONType: Decodable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
         // first try to decode a single value
-        if let type = try? container.decode(JSONPrimitiveType.self, forKey: .type) {
+        if let type = try? container.decodeIfPresent(JSONPrimitiveType.self, forKey: .type) {
             // and store it as an array
             self.type = [type]
         } else {
             // if it doesn't work, try to decode an array
-            self.type = try container.decode(Array<JSONPrimitiveType>.self, forKey: .type)
+            self.type = try container.decodeIfPresent(Array<JSONPrimitiveType>.self, forKey: .type)
         }
         
         self.items = try container.decodeIfPresent(ArrayItem.self, forKey: .items)
@@ -178,16 +180,19 @@ struct JSONType: Decodable {
 
 /*
  Represents an `items` type that is present when the JSON primitive type is "array"
+ Note: I tried to just add `ref` to `JSONType` to suppress this struct entirely
+ but that causes a recursive usage of JSONtype inside JSONtype (because of JSONType.items: JSONType)
  */
 // TODO change to a struct to support pattern ?
 enum ArrayItem: Decodable, Equatable {
-    case singleType(JSONPrimitiveType)
-    case multipleTypes([JSONPrimitiveType])
+    case type([JSONPrimitiveType])
     case ref(String)
+//    case properties([JSONType])  used in AllOf
     
     enum CodingKeys: String, CodingKey {
         case type
         case ref = "$ref"
+//        case properties
     }
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -198,10 +203,10 @@ enum ArrayItem: Decodable, Equatable {
         switch onlyKey {
         case .type:
             if let primitiveType = try? container.decode(JSONPrimitiveType.self, forKey: .type) {
-                self = .singleType(primitiveType)
+                self = .type([primitiveType])
             } else {
                 let arrayOfPrimitiveType = try container.decode([JSONPrimitiveType].self, forKey: .type)
-                self = .multipleTypes(arrayOfPrimitiveType)
+                self = .type(arrayOfPrimitiveType)
             }
             
         case .ref:
