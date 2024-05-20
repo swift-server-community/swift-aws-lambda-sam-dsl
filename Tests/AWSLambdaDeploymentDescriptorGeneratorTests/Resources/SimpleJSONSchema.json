@@ -1,6 +1,6 @@
 {
   "$id": "https://example.com/arrays.schema.json",
-  "$schema": "http://json-schema.org/draft-04/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "A representation of a person, company, organization, or place",
   "type": "object",
   "properties": {
@@ -33,7 +33,7 @@
       ]
     }      
   },
-  "definitions": {
+  "$defs": {
     "veggie": {
       "type": "object",
       "required": [ "veggieName", "veggieLike" ],

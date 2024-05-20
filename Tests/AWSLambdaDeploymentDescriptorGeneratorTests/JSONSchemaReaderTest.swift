@@ -18,6 +18,23 @@ import XCTest
 
 final class JSONSchemaReaderTest: XCTestCase {
 
+    func testUnsupportedSChemaVersion() throws {
+        
+        let JSONSchemaData = """
+{
+  "$id": "https://example.com/arrays.schema.json",
+  "$schema": "https://json-schema.org/draft/UNSUPPORTED/schema",
+  "description": "A representation of a person, company, organization, or place",
+  "type": "object"
+}
+""".data(using: .utf8)
+        
+        
+        let decoder = JSONDecoder()
+        let data = try XCTUnwrap(JSONSchemaData)
+        XCTAssertThrowsError(try decoder.decode(JSONSchema.self, from: data))
+    }
+
 
     func testSimpleJSONSchemaReader() throws {
         

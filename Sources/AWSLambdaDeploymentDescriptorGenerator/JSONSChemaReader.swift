@@ -12,7 +12,34 @@ struct JSONSchema: Decodable {
         case description
         case type
         case properties
-        case definitions
+        
+        // the key name changed between JSON Schema version
+        case definitions_draft4 = "definitions"
+        case definition = "$defs"
+    }
+    
+    // implement a custom init(from:) method to support different schema version
+    init(from decoder: any Decoder) throws {
+        
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        self.id = try container.decodeIfPresent(String.self, forKey: .id)
+        self.schema = try container.decode(String.self, forKey: .schema)
+        self.description = try container.decodeIfPresent(String.self, forKey: .description)
+        self.type = try container.decode(JSONPrimitiveType.self, forKey: .type)
+        self.properties = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .properties)
+        
+        // support multiple version of the "definition" key, depending on JSON Schema version
+        if self.schema.contains("2020-12") {
+            self.definitions = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .definition)
+        } else if self.schema.contains("draft-04") {
+            self.definitions = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .definitions_draft4)
+        } else {
+            throw DecodingError.dataCorrupted(
+                DecodingError.Context.init(
+                    codingPath: container.codingPath,
+                    debugDescription: "Unspported schema version: \(self.schema)"))
+        }
     }
 }
 
