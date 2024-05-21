@@ -28,8 +28,7 @@ final class JSONSchemaReaderTest: XCTestCase {
   "type": "object"
 }
 """.data(using: .utf8)
-        
-        
+
         let decoder = JSONDecoder()
         let data = try XCTUnwrap(JSONSchemaData)
         XCTAssertThrowsError(try decoder.decode(JSONSchema.self, from: data))

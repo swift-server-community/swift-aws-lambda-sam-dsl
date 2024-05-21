@@ -15,7 +15,7 @@ struct JSONSchema: Decodable {
         
         // the key name changed between JSON Schema version
         case definitions_draft4 = "definitions"
-        case definition = "$defs"
+        case definitions = "$defs"
     }
     
     // implement a custom init(from:) method to support different schema version
@@ -30,8 +30,12 @@ struct JSONSchema: Decodable {
         self.properties = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .properties)
         
         // support multiple version of the "definition" key, depending on JSON Schema version
-        if self.schema.contains("2020-12") {
-            self.definitions = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .definition)
+        // introduced by version 2019-09
+        // https://json-schema.org/draft/2019-09/release-notes#semi-incompatible-changes
+        // TODO: in the future, it would be greate to have a > implementation
+        // that would allow devs to write if schema >= 2019.09
+        if self.schema.contains("2020-12") || self.schema.contains("2019-09") {
+            self.definitions = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .definitions)
         } else if self.schema.contains("draft-04") {
             self.definitions = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .definitions_draft4)
         } else {
@@ -147,6 +151,7 @@ struct JSONType: Decodable {
     let required: [String]?
     let description: String?
     let additionalProperties: Bool?
+    let enumeration: [String]?
     
     // for Object
     // https://json-schema.org/understanding-json-schema/reference/object
@@ -177,6 +182,7 @@ struct JSONType: Decodable {
     enum CodingKeys: String, CodingKey {
         case type
         case items
+        case enumeration = "enum"
         case pattern
         case required
         case description
@@ -190,6 +196,7 @@ struct JSONType: Decodable {
         // check if this is a single value or an array
         self.type = try singleorMultipleValueArray(in: container, forKey: .type)
         
+        self.enumeration = try container.decodeIfPresent([String].self, forKey: .enumeration)
         self.items = try container.decodeIfPresent(ArrayItem.self, forKey: .items)
         self.pattern = try container.decodeIfPresent(String.self, forKey: .pattern)
         self.required = try container.decodeIfPresent([String].self, forKey: .required)
