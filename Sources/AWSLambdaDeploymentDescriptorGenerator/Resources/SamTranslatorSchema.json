@@ -473,7 +473,7 @@
       "required": [
         "UserPool",
         "Trigger"
-      ],      
+      ],
       "type": "object"
     },
     "AWS::Serverless::Function.DynamoDBEvent": {
@@ -802,15 +802,15 @@
         "Schedule": {
           "type": "string"
         },
-	"Name": {
-	  "type": "string"
-	},
-	"Description": {
-	  "type": "string"
-	},
-	"Enabled": {
-	  "type": "boolean"
-	}
+    "Name": {
+      "type": "string"
+    },
+    "Description": {
+      "type": "string"
+    },
+    "Enabled": {
+      "type": "boolean"
+    }
       },
       "required": [
         "Schedule"
