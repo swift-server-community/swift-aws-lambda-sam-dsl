@@ -143,50 +143,124 @@ struct JSONType: Decodable {
      "type": "string"
      
      "type": [
-       "string",
-       "boolean"
+     "string",
+     "boolean"
      ]
      */
     let type: [JSONPrimitiveType]?
+    let typeSchema: TypeSchema?
     let required: [String]?
     let description: String?
     let additionalProperties: Bool?
     let enumeration: [String]?
     
+    
+    // Nested enums for specific schema types
+    enum TypeSchema {
+        case string(StringSchema)
+        case object(ObjectSchema)
+        case array(ArraySchema)
+        case number(NumberSchema)
+        case boolean(Bool)
+        case enumeration([String])
+        case null
+    }
+    
     // for Object
     // https://json-schema.org/understanding-json-schema/reference/object
-    let properties: [String: JSONUnionType]?
+    struct ObjectSchema: Decodable {
+        enum CodingKeys: String, CodingKey {
+            case properties
+        }
+        
+        let properties: [String: JSONUnionType]
+        
+        // Validate required within string array if present
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            properties = try container.decode([String: JSONUnionType].self, forKey: .properties)
+        }
+    }
     
     // for String
     // https://json-schema.org/understanding-json-schema/reference/string
-    let pattern: String? // or RegEx ?
-    // not supported at the moment
-    // let minLength
-    // let maxLength
-    // let format: String // should be an enum to match specification
+    struct StringSchema: Decodable {
+        let pattern: String?
+        //     let minLength
+        //     let maxLength
+        //     let format: String // should be an enum to match specification
+        
+        enum CodingKeys: String, CodingKey {
+            case pattern
+        }
+        
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            pattern = try container.decodeIfPresent(String.self, forKey: .pattern)
+            
+        }
+    }
     
     // for Array type
     // https://json-schema.org/understanding-json-schema/reference/array
-    let items: ArrayItem?
-    // not supported at the moment
-    // let prefixItems
-    // let unevaluatedItems
-    // let contains
-    // let minContains
-    // let maxContains
-    // let minItems
-    // let maxItems
-    // let uniqueItems
-
-
+    struct ArraySchema: Decodable {
+        let items: ArrayItem?
+        let minItems: Int?
+        
+        enum CodingKeys: String, CodingKey {
+            case items
+            case minItems
+        }
+        
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            items = try container.decodeIfPresent(ArrayItem.self, forKey: .items)
+            minItems = try container.decodeIfPresent(Int.self, forKey: .minItems)
+        }
+        
+        // let prefixItems
+        // let unevaluatedItems
+        // let contains
+        // let minContains
+        // let maxContains
+        // let maxItems
+        // let uniqueItems
+    }
+    
+    // for Number
+    // https://json-schema.org/understanding-json-schema/reference/numeric
+    struct NumberSchema: Decodable {
+        let multipleOf: Double?
+        let minimum: Double?
+        let exclusiveMinimum: Bool?
+        let maximum: Double?
+        let exclusiveMaximum: Bool?
+        
+        enum CodingKeys: String, CodingKey {
+            case multipleOf
+            case minimum
+            case exclusiveMinimum
+            case maximum
+            case exclusiveMaximum
+        }
+        
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            
+            multipleOf = try container.decodeIfPresent(Double.self, forKey: .multipleOf)
+            minimum = try container.decodeIfPresent(Double.self, forKey: .minimum)
+            exclusiveMinimum = try container.decodeIfPresent(Bool.self, forKey: .exclusiveMinimum)
+            maximum = try container.decodeIfPresent(Double.self, forKey: .maximum)
+            exclusiveMaximum = try container.decodeIfPresent(Bool.self, forKey: .exclusiveMaximum)
+            
+        }
+    }
+    
     enum CodingKeys: String, CodingKey {
         case type
-        case items
         case enumeration = "enum"
-        case pattern
         case required
         case description
-        case properties
         case additionalProperties
     }
     
@@ -196,13 +270,56 @@ struct JSONType: Decodable {
         // check if this is a single value or an array
         self.type = try singleorMultipleValueArray(in: container, forKey: .type)
         
+        if self.type?.count == 1, let type = self.type {
+            switch type[0] {
+            case .string:
+                self.typeSchema = .string(try StringSchema(from: decoder))
+            case .object:
+                self.typeSchema = .object(try ObjectSchema(from: decoder))
+            case .array:
+                self.typeSchema = .array(try ArraySchema(from: decoder))
+            case .number:
+                self.typeSchema = .number(try NumberSchema(from: decoder))
+            case .boolean:
+                self.typeSchema = .boolean(false) // Set a default value
+            case .integer:
+                self.typeSchema = .number(try NumberSchema(from: decoder))
+            case .null:
+                self.typeSchema = .null
+            }
+        } else {
+            self.typeSchema = nil
+        }
+        
         self.enumeration = try container.decodeIfPresent([String].self, forKey: .enumeration)
-        self.items = try container.decodeIfPresent(ArrayItem.self, forKey: .items)
-        self.pattern = try container.decodeIfPresent(String.self, forKey: .pattern)
         self.required = try container.decodeIfPresent([String].self, forKey: .required)
         self.description = try container.decodeIfPresent(String.self, forKey: .description)
-        self.properties = try container.decodeIfPresent([String : JSONUnionType].self, forKey: .properties)
         self.additionalProperties = try container.decodeIfPresent(Bool.self, forKey: .additionalProperties)
+    }
+    
+    // MARK: accessor methods to easily access associated value of TypeSchema
+    // question, instead of return nil, should we raise a fatalerror() ?
+    // TODO: we should have one method for each TypeSchema
+    
+    func getObject() -> [String: JSONUnionType]? {
+        if case let .object(schema) = self.typeSchema {
+            return schema.properties
+        }
+        return nil
+    }
+    
+    func getPattern() -> String? {
+        if case let .string(schema) = self.typeSchema {
+            return schema.pattern
+        }
+        return nil
+    }
+    
+    func getArray() -> ArrayItem? {
+        if case let .array(schema) = self.typeSchema {
+            return schema.items
+        }
+        return nil
     }
 }
 
@@ -243,7 +360,7 @@ enum ArrayItem: Decodable, Equatable {
 // to avoid having to code this at two different places
 fileprivate func singleorMultipleValueArray<T: CodingKey>(in container: KeyedDecodingContainer<T>, forKey key: T) throws -> [JSONPrimitiveType] {
     let result: [JSONPrimitiveType]
-
+    
     // first try to decode a single value
     if let primitiveType = try? container.decode(JSONPrimitiveType.self, forKey: key) {
         // and store it as an array of one element

@@ -54,10 +54,10 @@ final class JSONSchemaReaderTest: XCTestCase {
         let fruits = try XCTUnwrap(schema.properties?["fruits"])
         let fruitType = try XCTUnwrap(fruits.jsonType().type)
         XCTAssertTrue(fruitType.contains(.array))
-        XCTAssertTrue(fruits.jsonType().items == ArrayItem.type([.string]))
+        XCTAssertTrue(fruits.jsonType().getArray() == ArrayItem.type([.string]))
         
         let testArrayMultipleTypes = try XCTUnwrap(schema.properties?["testArrayMultipleTypes"])
-        XCTAssertTrue(testArrayMultipleTypes.jsonType().items == ArrayItem.type([.string, .boolean]))
+        XCTAssertTrue(testArrayMultipleTypes.jsonType().getArray() == ArrayItem.type([.string, .boolean]))
         
         let testAnyOfArrayItem = try XCTUnwrap(schema.properties?["testAnyOfArrayItem"])
         if case .anyOfArrayItem(let ai) = testAnyOfArrayItem {
@@ -70,7 +70,7 @@ final class JSONSchemaReaderTest: XCTestCase {
 
 
         let vegetable = try XCTUnwrap(schema.properties?["vegetables"])
-        XCTAssertTrue(vegetable.jsonType().items == ArrayItem.ref("#/definitions/veggie"))
+        XCTAssertTrue(vegetable.jsonType().getArray() == ArrayItem.ref("#/definitions/veggie"))
         
         XCTAssertTrue(schema.definitions?.count == 2)
         let veggie = try XCTUnwrap(schema.definitions?["veggie"])
@@ -78,11 +78,11 @@ final class JSONSchemaReaderTest: XCTestCase {
         XCTAssertTrue(veggieType.contains(.object))
         XCTAssertTrue(veggie.jsonType().required?.count == 2)
         
-        let veggieName = try XCTUnwrap(veggie.jsonType().properties?["veggieName"])
+        let veggieName = try XCTUnwrap(veggie.jsonType().getObject()?["veggieName"])
         let veggieNameType = try XCTUnwrap(veggieName.jsonType().type)
         XCTAssertTrue(veggieNameType.contains(.string))
         
-        let veggieLike = try XCTUnwrap(veggie.jsonType().properties?["veggieLike"])
+        let veggieLike = try XCTUnwrap(veggie.jsonType().getObject()?["veggieLike"])
         let veggieLikeType = try XCTUnwrap(veggieLike.jsonType().type)
         XCTAssertTrue(veggieLikeType.contains(.boolean))
     }
