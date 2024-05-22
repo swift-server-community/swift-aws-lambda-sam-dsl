@@ -313,7 +313,16 @@ struct JSONType: Decodable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
         // check if this is a single value or an array
-        self.type = try singleorMultipleValueArray(in: container, forKey: .type)
+        if let primitiveType = try? container.decodeIfPresent(JSONPrimitiveType.self, forKey: .type) {
+            // and store it as an array of one element
+            self.type = [primitiveType]
+        } else {
+            // if it doesn't work, try to decode an array
+            // if it doesn't work neither, this is a programming error, raise an exception
+            let arrayOfPrimitiveType = try? container.decode([JSONPrimitiveType].self, forKey: .type)
+            self.type = arrayOfPrimitiveType ?? []
+        }
+
         
         if self.type?.count == 1, let type = self.type {
             switch type[0] {
@@ -368,21 +377,4 @@ struct JSONType: Decodable {
         }
         return nil
     }
-}
-
-// to avoid having to code this at two different places
-fileprivate func singleorMultipleValueArray<T: CodingKey>(in container: KeyedDecodingContainer<T>, forKey key: T) throws -> [JSONPrimitiveType] {
-    let result: [JSONPrimitiveType]
-    
-    // first try to decode a single value
-    if let primitiveType = try? container.decodeIfPresent(JSONPrimitiveType.self, forKey: key) {
-        // and store it as an array of one element
-        result = [primitiveType]
-    } else {
-        // if it doesn't work, try to decode an array
-        // if it doesn't work neither, this is a programming error, raise an exception
-        let arrayOfPrimitiveType = try? container.decode([JSONPrimitiveType].self, forKey: key)
-        result = arrayOfPrimitiveType ?? []
-    }
-    return result
 }
