@@ -328,13 +328,20 @@ struct JSONType: Decodable {
     // question, instead of return nil, should we raise a fatalerror() ?
     // TODO: we should have one method for each TypeSchema
     
-    func getObject() -> [String: JSONUnionType]? {
+//    func getObject() -> [String: JSONUnionType]? {
+//        if case let .object(schema) = self.typeSchema {
+//            return schema.properties
+//        }
+//        return nil
+//    }
+
+    func getObject(for property:String) -> JSONUnionType? {
         if case let .object(schema) = self.typeSchema {
-            return schema.properties
+            return schema.properties?[property]
         }
         return nil
     }
-    
+
     func getPattern() -> String? {
         if case let .string(schema) = self.typeSchema {
             return schema.pattern

@@ -77,11 +77,11 @@ final class JSONSchemaReaderTest: XCTestCase {
         XCTAssertTrue(veggieType.contains(.object))
         XCTAssertTrue(veggie.jsonType().required?.count == 2)
         
-        let veggieName = try XCTUnwrap(veggie.jsonType().getObject()?["veggieName"])
+        let veggieName = try XCTUnwrap(veggie.jsonType().getObject(for: "veggieName"))
         let veggieNameType = try XCTUnwrap(veggieName.jsonType().type)
         XCTAssertTrue(veggieNameType.contains(.string))
         
-        let veggieLike = try XCTUnwrap(veggie.jsonType().getObject()?["veggieLike"])
+        let veggieLike = try XCTUnwrap(veggie.jsonType().getObject(for: "veggieLike"))
         let veggieLikeType = try XCTUnwrap(veggieLike.jsonType().type)
         XCTAssertTrue(veggieLikeType.contains(.boolean))
     }
