@@ -228,9 +228,9 @@ final class JSONSchemaReaderTest: XCTestCase {
 """,decodeTo: JSONType.self)
     }
     
-    internal func _testJSONExtract(json: String, decodeTo: Decodable.Type) throws {
+    internal func _testJSONExtract(json: String, decodeTo type: Decodable.Type) throws {
         let decoder = JSONDecoder()
         let data = try XCTUnwrap(json.data(using: .utf8))
-        XCTAssertNoThrow(try decoder.decode(JSONType.self, from: data))
+        XCTAssertNoThrow(try decoder.decode(type, from: data))
     }
 }
