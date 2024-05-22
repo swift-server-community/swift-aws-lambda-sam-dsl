@@ -671,7 +671,6 @@
       ],
       "type": "object"
     },
-
     "AWS::Serverless::Function.SQSEvent": {
       "additionalProperties": false,
       "properties": {

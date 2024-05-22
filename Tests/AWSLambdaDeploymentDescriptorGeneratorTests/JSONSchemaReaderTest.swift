@@ -100,7 +100,51 @@ final class JSONSchemaReaderTest: XCTestCase {
         let schema = try decoder.decode(JSONSchema.self, from: schemaData)
         print(schema)
         
+        // validate top level properties 
+        XCTAssertTrue(schema.schema == .draft4)
         XCTAssertTrue(try XCTUnwrap(schema.required?.contains("Resources")))
+        XCTAssertTrue(schema.type == .object)
+        XCTAssertTrue(schema.additionalProperties == false)
+
+        // check properties
+        XCTAssertTrue(schema.properties?.count == 11)
+        let t1 = try XCTUnwrap(schema.properties?["Transform"]?.jsonType().enumeration)
+        XCTAssertTrue(t1.contains(["AWS::Serverless-2016-10-31"]))
+        let t2 = try XCTUnwrap(schema.properties?["Resources"]?.jsonType())
+        if case let .object(schema) = t2.subType {
+            let t3 = try XCTUnwrap(schema.patternProperties?["^[a-zA-Z0-9]+$"])
+            XCTAssertTrue(t3.any()?.count == 4)
+            XCTAssertTrue(t3.any()?[0].ref == "#/definitions/AWS::Serverless::Api")
+        } else {
+            XCTFail("the subschema is not an object")
+        }
+        
+        // check definition
+        XCTAssertTrue(schema.definitions?.count == 32)
+        let t4 = try XCTUnwrap(schema.definitions?["AWS::Serverless::SimpleTable"]?.jsonType())
+        if case let .object(schema) = t4.subType {
+            let t3 = try XCTUnwrap(schema.properties?["DependsOn"])
+            let t4 = try XCTUnwrap(t3.any())
+            XCTAssertTrue(t4.count == 2)
+            XCTAssertTrue(t4[0].type?.count == 1)
+            XCTAssertTrue(t4[0].type?.contains([.string]) ?? false)
+            if case let .string(schema) = t4[0].subType {
+                XCTAssertTrue(schema.pattern == "^[a-zA-Z0-9]+$")
+            } else {
+                XCTFail("the subschema is not a string")
+            }
+            XCTAssertTrue(t4[1].type?.count == 1)
+            XCTAssertTrue(t4[1].type?.contains([.array]) ?? false)
+            if case let .array(schema) = t4[1].subType {
+                XCTAssertTrue(schema.items?.type?.count == 1)
+                XCTAssertTrue(schema.items?.type?.contains([.string]) ?? false)
+                XCTAssertTrue(schema.items?.getPattern() == "^[a-zA-Z0-9]+$")
+            } else {
+                XCTFail("the subschema is not an array")
+            }
+        } else {
+            XCTFail("the subschema is not an object")
+        }
 
         // TODO : validate a couple of assertions here (not all)
     }
