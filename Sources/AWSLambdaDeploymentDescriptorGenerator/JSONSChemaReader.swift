@@ -5,7 +5,58 @@
  
  We do not intent to create a generic JSON SChema decoder.
  */
-
+struct JSONSchema: Decodable {
+    let id: String?
+    let schema: JSONSchemaDialect
+    let description: String?
+    let type: JSONPrimitiveType
+    let properties: [String: JSONUnionType]?
+    let additionalProperties: Bool?
+    let definitions: [String: JSONUnionType]?
+    let required : [String]?
+    
+    // standard coding keys
+    enum CodingKeys: String, CodingKey {
+        case id = "$id"
+        case schema = "$schema"
+        case description
+        case type
+        case properties
+        case additionalProperties
+        case definitions = "$defs"
+        case required
+    }
+    // keys for draft4 and before
+    enum CodingKeys_draft4: String, CodingKey {
+        case definitions = "definitions"
+    }
+        
+    // implement a custom init(from:) method to support different schema version
+    init(from decoder: any Decoder) throws {
+        
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        self.id = try container.decodeIfPresent(String.self, forKey: .id)
+        self.schema = try container.decode(JSONSchemaDialect.self, forKey: .schema)
+        self.description = try container.decodeIfPresent(String.self, forKey: .description)
+        self.type = try container.decode(JSONPrimitiveType.self, forKey: .type)
+        self.properties = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .properties)
+        self.additionalProperties = try container.decodeIfPresent(Bool.self, forKey: .additionalProperties)
+        self.required = try container.decodeIfPresent([String].self, forKey: .required)
+        
+        // support multiple version of the "definition" key, depending on JSON Schema version
+        // introduced by version 2019-09
+        // https://json-schema.org/draft/2019-09/release-notes#semi-incompatible-changes
+        // TODO: move this logic to JSONSchemaDialect, in a generic way (????)
+        switch self.schema {
+        case .v2019_09, .v2020_12:
+            self.definitions = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .definitions)
+        case .draft4:
+            let container = try decoder.container(keyedBy: CodingKeys_draft4.self)
+            self.definitions = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .definitions)
+        }
+    }
+}
 
 // This represents the multiple versions of a JSON Schema
 // https://json-schema.org/specification-links
@@ -35,56 +86,7 @@ enum JSONSchemaDialect: String, Equatable, Decodable {
     }
 }
 
-struct JSONSchema: Decodable {
-    let id: String?
-    let schema: JSONSchemaDialect
-    let description: String?
-    let type: JSONPrimitiveType
-    let properties: [String: JSONUnionType]?
-    let definitions: [String: JSONUnionType]?
-    let required : [String]?
-    
-    // standard coding keys
-    enum CodingKeys: String, CodingKey {
-        case id = "$id"
-        case schema = "$schema"
-        case description
-        case type
-        case properties
-        case definitions = "$defs"
-        case required
-    }
-    // keys for draft4 and before
-    enum CodingKeys_draft4: String, CodingKey {
-        case definitions = "definitions"
-    }
-        
-    // implement a custom init(from:) method to support different schema version
-    init(from decoder: any Decoder) throws {
-        
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        
-        self.id = try container.decodeIfPresent(String.self, forKey: .id)
-        self.schema = try container.decode(JSONSchemaDialect.self, forKey: .schema)
-        self.description = try container.decodeIfPresent(String.self, forKey: .description)
-        self.type = try container.decode(JSONPrimitiveType.self, forKey: .type)
-        self.properties = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .properties)
-        self.required = try container.decodeIfPresent([String].self, forKey: .required)
-        
-        // support multiple version of the "definition" key, depending on JSON Schema version
-        // introduced by version 2019-09
-        // https://json-schema.org/draft/2019-09/release-notes#semi-incompatible-changes
-        // TODO: move this logic to JSONSchemaDialect, in a generic way (????)
-        switch self.schema {
-        case .v2019_09, .v2020_12:
-            self.definitions = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .definitions)
-        case .draft4:
-            let container = try decoder.container(keyedBy: CodingKeys_draft4.self)
-            self.definitions = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .definitions)
-        }
-    }
-}
-
+// A JSON primitive type
 // https://json-schema.org/understanding-json-schema/reference/type
 enum JSONPrimitiveType: Decodable, Equatable {
     case string
@@ -118,6 +120,7 @@ enum JSONPrimitiveType: Decodable, Equatable {
     }
 }
 
+// a JSON Union Type
 enum JSONUnionType: Decodable {
     case anyOf([JSONType])
     case allOf([JSONUnionType])
@@ -157,13 +160,30 @@ enum JSONUnionType: Decodable {
         
         return jsonType
     }
+    
+    func any() -> [JSONType]? {
+        guard case .anyOf(let anyOf) = self else {
+            fatalError("not an anyOf")
+        }
+        
+        return anyOf
+    }
+    
+    func all() -> [JSONUnionType]? {
+        guard case .allOf(let allOf) = self else {
+            fatalError("not an allOf")
+        }
+        
+        return allOf
+    }
 }
 
+// a JSON type
 struct JSONType: Decodable {
 
     let type: [JSONPrimitiveType]?
     let ref: String?
-    let typeSchema: TypeSchema?
+    let subType: SubTypeSchema?
     let required: [String]?
     let description: String?
     let additionalProperties: Bool?
@@ -171,7 +191,7 @@ struct JSONType: Decodable {
     
     
     // Nested enums for specific schema types
-    indirect enum TypeSchema {
+    indirect enum SubTypeSchema {
         case string(StringSchema)
         case object(ObjectSchema)
         case array(ArraySchema)
@@ -199,7 +219,6 @@ struct JSONType: Decodable {
         // Validate required within string array if present
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
-            print(container.codingPath)
             self.properties = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .properties)
             self.patternProperties = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .patternProperties)
             self.minProperties = try container.decodeIfPresent(Int.self, forKey: .minProperties)
@@ -299,22 +318,22 @@ struct JSONType: Decodable {
         if self.type?.count == 1, let type = self.type {
             switch type[0] {
             case .string:
-                self.typeSchema = .string(try StringSchema(from: decoder))
+                self.subType = .string(try StringSchema(from: decoder))
             case .object:
-                self.typeSchema = .object(try ObjectSchema(from: decoder))
+                self.subType = .object(try ObjectSchema(from: decoder))
             case .array:
-                self.typeSchema = .array(try ArraySchema(from: decoder))
+                self.subType = .array(try ArraySchema(from: decoder))
             case .number:
-                self.typeSchema = .number(try NumberSchema(from: decoder))
+                self.subType = .number(try NumberSchema(from: decoder))
             case .boolean:
-                self.typeSchema = .boolean
+                self.subType = .boolean
             case .integer:
-                self.typeSchema = .number(try NumberSchema(from: decoder))
+                self.subType = .number(try NumberSchema(from: decoder))
             case .null:
-                self.typeSchema = .null
+                self.subType = .null
             }
         } else {
-            self.typeSchema = nil
+            self.subType = nil
         }
         
         self.enumeration = try container.decodeIfPresent([String].self, forKey: .enumeration)
@@ -327,30 +346,24 @@ struct JSONType: Decodable {
     // MARK: accessor methods to easily access associated value of TypeSchema
     // question, instead of return nil, should we raise a fatalerror() ?
     // TODO: we should have one method for each TypeSchema
-    
-//    func getObject() -> [String: JSONUnionType]? {
-//        if case let .object(schema) = self.typeSchema {
-//            return schema.properties
-//        }
-//        return nil
-//    }
+
 
     func getObject(for property:String) -> JSONUnionType? {
-        if case let .object(schema) = self.typeSchema {
+        if case let .object(schema) = self.subType {
             return schema.properties?[property]
         }
         return nil
     }
 
     func getPattern() -> String? {
-        if case let .string(schema) = self.typeSchema {
+        if case let .string(schema) = self.subType {
             return schema.pattern
         }
         return nil
     }
     
     func getItems() -> JSONType? {
-        if case let .array(schema) = self.typeSchema {
+        if case let .array(schema) = self.subType {
             return schema.items
         }
         return nil
