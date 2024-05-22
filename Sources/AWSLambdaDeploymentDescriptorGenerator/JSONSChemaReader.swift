@@ -1,48 +1,86 @@
+/*
+ This struct represent a subset of a JSONSchema
+ We focus implementation to specifically decode the SAM Template JSON Schema,
+ as defined at https://github.com/aws/serverless-application-model/blob/develop/samtranslator/validator/sam_schema/schema.json
+ 
+ We do not intent to create a generic JSON SChema decoder.
+ */
+
+
+// This represents the multiple versions of a JSON Schema
+// https://json-schema.org/specification-links
+enum JSONSchemaDialect: String, Equatable, Decodable {
+    
+    // the versions we support
+    case draft4 = "http://json-schema.org/draft-04/schema#"
+    case v2019_09 = "https://json-schema.org/draft/2019-09/schema"
+    case v2020_12 = "https://json-schema.org/draft/2020-12/schema"
+    
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let schemaString = try container.decode(String.self)
+        
+        if schemaString.contains("2020-12") {
+            self = .v2020_12
+        } else if schemaString.contains("2019-09") {
+            self = .v2019_09
+        } else if schemaString.contains("draft-04") {
+            self = .draft4
+        } else {
+            throw DecodingError.dataCorrupted(
+                DecodingError.Context.init(
+                    codingPath: container.codingPath,
+                    debugDescription: "Unspported schema version: \(schemaString)"))
+        }
+    }
+}
+
 struct JSONSchema: Decodable {
     let id: String?
-    let schema: String
+    let schema: JSONSchemaDialect
     let description: String?
     let type: JSONPrimitiveType
     let properties: [String: JSONUnionType]?
     let definitions: [String: JSONUnionType]?
+    let required : [String]?
     
+    // standard coding keys
     enum CodingKeys: String, CodingKey {
         case id = "$id"
         case schema = "$schema"
         case description
         case type
         case properties
-        
-        // the key name changed between JSON Schema version
-        case definitions_draft4 = "definitions"
         case definitions = "$defs"
+        case required
     }
-    
+    // keys for draft4 and before
+    enum CodingKeys_draft4: String, CodingKey {
+        case definitions = "definitions"
+    }
+        
     // implement a custom init(from:) method to support different schema version
     init(from decoder: any Decoder) throws {
         
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
         self.id = try container.decodeIfPresent(String.self, forKey: .id)
-        self.schema = try container.decode(String.self, forKey: .schema)
+        self.schema = try container.decode(JSONSchemaDialect.self, forKey: .schema)
         self.description = try container.decodeIfPresent(String.self, forKey: .description)
         self.type = try container.decode(JSONPrimitiveType.self, forKey: .type)
         self.properties = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .properties)
+        self.required = try container.decodeIfPresent([String].self, forKey: .required)
         
         // support multiple version of the "definition" key, depending on JSON Schema version
         // introduced by version 2019-09
         // https://json-schema.org/draft/2019-09/release-notes#semi-incompatible-changes
-        // TODO: in the future, it would be greate to have a > implementation
-        // that would allow devs to write if schema >= 2019.09
-        if self.schema.contains("2020-12") || self.schema.contains("2019-09") {
+        // TODO: move this logic to JSONSchemaDialect, in a generic way (????)
+        switch self.schema {
+        case .v2019_09, .v2020_12:
             self.definitions = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .definitions)
-        } else if self.schema.contains("draft-04") {
-            self.definitions = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .definitions_draft4)
-        } else {
-            throw DecodingError.dataCorrupted(
-                DecodingError.Context.init(
-                    codingPath: container.codingPath,
-                    debugDescription: "Unspported schema version: \(self.schema)"))
+        case .draft4:
+            let container = try decoder.container(keyedBy: CodingKeys_draft4.self)
+            self.definitions = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .definitions)
         }
     }
 }
@@ -82,10 +120,8 @@ enum JSONPrimitiveType: Decodable, Equatable {
 
 enum JSONUnionType: Decodable {
     case anyOf([JSONType])
-    case anyOfArrayItem([ArrayItem])
     case allOf([JSONUnionType])
     case type(JSONType)
-    case ref(String)
     
     enum CodingKeys: String, CodingKey {
         case anyOf
@@ -102,28 +138,14 @@ enum JSONUnionType: Decodable {
                 let value = try container.decode(Array<JSONUnionType>.self, forKey: .allOf)
                 self = .allOf(value)
             case .anyOf:
-                if let value = try? container.decode(Array<JSONType>.self, forKey: .anyOf) {
-                    self = .anyOf(value)
-                } else {
-                    let value = try container.decode(Array<ArrayItem>.self, forKey: .anyOf)
-                    self = .anyOfArrayItem(value)
-                }
+                let value = try container.decode(Array<JSONType>.self, forKey: .anyOf)
+                self = .anyOf(value)
             }
         } else {
-            // there is no anyOf or allOf key, the entry has no key and is either
-            // - a raw JSONType
-            // - a ref to another type : "$ref" : "path/to/other/path" (which is decoded as `ArrayItem`
+            // there is no anyOf or allOf key, the entry is a JSONType
             let container = try decoder.singleValueContainer()
-            if let jsonType = try? container.decode(JSONType.self) {
-                self = .type(jsonType)
-            } else {
-                let ref = try container.decode(ArrayItem.self)
-                guard case .ref(let s) = ref else {
-                    throw DecodingError.typeMismatch(ArrayItem.self, DecodingError.Context.init(codingPath: container.codingPath, debugDescription: "This key has no JSONType no Ref. Expecting an ArrayItem for: \(ref)", underlyingError: nil))
-                }
-                self = .ref(s)
-            }
-            
+            let value = try container.decode(JSONType.self)
+            self = .type(value)
         }
     }
     
@@ -138,16 +160,9 @@ enum JSONUnionType: Decodable {
 }
 
 struct JSONType: Decodable {
-    // most type are single value, but sometimes it's an array
-    /*
-     "type": "string"
-     
-     "type": [
-     "string",
-     "boolean"
-     ]
-     */
+
     let type: [JSONPrimitiveType]?
+    let ref: String?
     let typeSchema: TypeSchema?
     let required: [String]?
     let description: String?
@@ -156,12 +171,12 @@ struct JSONType: Decodable {
     
     
     // Nested enums for specific schema types
-    enum TypeSchema {
+    indirect enum TypeSchema {
         case string(StringSchema)
         case object(ObjectSchema)
         case array(ArraySchema)
         case number(NumberSchema)
-        case boolean(Bool)
+        case boolean
         case enumeration([String])
         case null
     }
@@ -171,14 +186,24 @@ struct JSONType: Decodable {
     struct ObjectSchema: Decodable {
         enum CodingKeys: String, CodingKey {
             case properties
+            case patternProperties
+            case minProperties
+            case maxProperties
         }
         
-        let properties: [String: JSONUnionType]
-        
+        let properties: [String: JSONUnionType]?
+        let patternProperties: [String: JSONUnionType]?
+        let minProperties: Int?
+        let maxProperties: Int?
+
         // Validate required within string array if present
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
-            properties = try container.decode([String: JSONUnionType].self, forKey: .properties)
+            print(container.codingPath)
+            self.properties = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .properties)
+            self.patternProperties = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .patternProperties)
+            self.minProperties = try container.decodeIfPresent(Int.self, forKey: .minProperties)
+            self.maxProperties = try container.decodeIfPresent(Int.self, forKey: .maxProperties)
         }
     }
     
@@ -204,7 +229,7 @@ struct JSONType: Decodable {
     // for Array type
     // https://json-schema.org/understanding-json-schema/reference/array
     struct ArraySchema: Decodable {
-        let items: ArrayItem?
+        let items: JSONType?
         let minItems: Int?
         
         enum CodingKeys: String, CodingKey {
@@ -214,7 +239,7 @@ struct JSONType: Decodable {
         
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
-            items = try container.decodeIfPresent(ArrayItem.self, forKey: .items)
+            items = try container.decodeIfPresent(JSONType.self, forKey: .items)
             minItems = try container.decodeIfPresent(Int.self, forKey: .minItems)
         }
         
@@ -258,6 +283,7 @@ struct JSONType: Decodable {
     
     enum CodingKeys: String, CodingKey {
         case type
+        case ref = "$ref"
         case enumeration = "enum"
         case required
         case description
@@ -281,7 +307,7 @@ struct JSONType: Decodable {
             case .number:
                 self.typeSchema = .number(try NumberSchema(from: decoder))
             case .boolean:
-                self.typeSchema = .boolean(false) // Set a default value
+                self.typeSchema = .boolean
             case .integer:
                 self.typeSchema = .number(try NumberSchema(from: decoder))
             case .null:
@@ -295,6 +321,7 @@ struct JSONType: Decodable {
         self.required = try container.decodeIfPresent([String].self, forKey: .required)
         self.description = try container.decodeIfPresent(String.self, forKey: .description)
         self.additionalProperties = try container.decodeIfPresent(Bool.self, forKey: .additionalProperties)
+        self.ref = try container.decodeIfPresent(String.self, forKey: .ref)
     }
     
     // MARK: accessor methods to easily access associated value of TypeSchema
@@ -315,45 +342,11 @@ struct JSONType: Decodable {
         return nil
     }
     
-    func getArray() -> ArrayItem? {
+    func getItems() -> JSONType? {
         if case let .array(schema) = self.typeSchema {
             return schema.items
         }
         return nil
-    }
-}
-
-/*
- Represents an `items` type that is present when the JSON primitive type is "array"
- Note: I tried to just add `ref` to `JSONType` to suppress this struct entirely
- but that causes a recursive usage of JSONtype inside JSONtype (because of JSONType.items: JSONType)
- */
-// TODO change to a struct to support pattern ?
-enum ArrayItem: Decodable, Equatable {
-    case type([JSONPrimitiveType])
-    case ref(String)
-    
-    enum CodingKeys: String, CodingKey {
-        case type
-        case ref = "$ref"
-    }
-    
-    init(from decoder: any Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        
-        // extract the one and only key in this containers (either type or ref)
-        var allKeys = ArraySlice(container.allKeys)
-        guard let onlyKey = allKeys.popFirst(), allKeys.isEmpty else {
-            throw DecodingError.typeMismatch(ArrayItem.self, DecodingError.Context.init(codingPath: container.codingPath, debugDescription: "Invalid number of keys found, expected one, found \(allKeys.count).", underlyingError: nil))
-        }
-        
-        switch onlyKey {
-        case .type:
-            self = .type(try singleorMultipleValueArray(in: container, forKey: .type))
-        case .ref:
-            let ref = try container.decode(String.self, forKey: .ref)
-            self = .ref(ref)
-        }
     }
 }
 
@@ -362,14 +355,14 @@ fileprivate func singleorMultipleValueArray<T: CodingKey>(in container: KeyedDec
     let result: [JSONPrimitiveType]
     
     // first try to decode a single value
-    if let primitiveType = try? container.decode(JSONPrimitiveType.self, forKey: key) {
+    if let primitiveType = try? container.decodeIfPresent(JSONPrimitiveType.self, forKey: key) {
         // and store it as an array of one element
         result = [primitiveType]
     } else {
         // if it doesn't work, try to decode an array
         // if it doesn't work neither, this is a programming error, raise an exception
-        let arrayOfPrimitiveType = try container.decode([JSONPrimitiveType].self, forKey: key)
-        result = arrayOfPrimitiveType
+        let arrayOfPrimitiveType = try? container.decode([JSONPrimitiveType].self, forKey: key)
+        result = arrayOfPrimitiveType ?? []
     }
     return result
 }

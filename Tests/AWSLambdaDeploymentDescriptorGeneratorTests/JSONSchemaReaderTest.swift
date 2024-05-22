@@ -54,23 +54,22 @@ final class JSONSchemaReaderTest: XCTestCase {
         let fruits = try XCTUnwrap(schema.properties?["fruits"])
         let fruitType = try XCTUnwrap(fruits.jsonType().type)
         XCTAssertTrue(fruitType.contains(.array))
-        XCTAssertTrue(fruits.jsonType().getArray() == ArrayItem.type([.string]))
+        XCTAssertTrue(fruits.jsonType().getItems()?.type?.contains([.string]) ?? false)
         
         let testArrayMultipleTypes = try XCTUnwrap(schema.properties?["testArrayMultipleTypes"])
-        XCTAssertTrue(testArrayMultipleTypes.jsonType().getArray() == ArrayItem.type([.string, .boolean]))
+        XCTAssertTrue(testArrayMultipleTypes.jsonType().getItems()?.type?.contains([.string, .boolean]) ?? false)
         
         let testAnyOfArrayItem = try XCTUnwrap(schema.properties?["testAnyOfArrayItem"])
-        if case .anyOfArrayItem(let ai) = testAnyOfArrayItem {
+        if case .anyOf(let ai) = testAnyOfArrayItem {
             XCTAssertTrue(ai.count == 2)
-            XCTAssertTrue(ai[0] == ArrayItem.type([.string]))
-            XCTAssertTrue(ai[1] == ArrayItem.ref("#/definitions/AWS::Serverless::Api.S3Location"))
+            XCTAssertTrue(ai[0].type?.contains([.string]) ?? false)
+            XCTAssertTrue(ai[1].ref == "#/definitions/AWS::Serverless::Api.S3Location")
         } else {
             XCTFail("Not an [ArrayItem]")
         }
 
-
         let vegetable = try XCTUnwrap(schema.properties?["vegetables"])
-        XCTAssertTrue(vegetable.jsonType().getArray() == ArrayItem.ref("#/definitions/veggie"))
+        XCTAssertTrue(vegetable.jsonType().getItems()?.ref == "#/definitions/veggie")
         
         XCTAssertTrue(schema.definitions?.count == 2)
         let veggie = try XCTUnwrap(schema.definitions?["veggie"])
@@ -98,9 +97,140 @@ final class JSONSchemaReaderTest: XCTestCase {
         let schemaData = try Data(contentsOf: url)
 
         let decoder = JSONDecoder()
-        let schema = try? decoder.decode(JSONSchema.self, from: schemaData)
-//        print(schema)
+        let schema = try decoder.decode(JSONSchema.self, from: schemaData)
+        print(schema)
+        
+        XCTAssertTrue(try XCTUnwrap(schema.required?.contains("Resources")))
 
         // TODO : validate a couple of assertions here (not all)
+    }
+    
+    func testJSONTypePatternProperties() throws {
+
+        try _testJSONExtract(json:"""
+    {
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[a-zA-Z0-9]+$": {
+          "type": "object"
+        }
+      },
+      "type": "object"
+    }
+""", decodeTo: JSONType.self)
+    }
+    
+    func testJSONTypeMinMaxProperties() throws {
+        
+        try _testJSONExtract(json:"""
+    {
+      "additionalProperties": false,
+      "maxProperties": 50,
+      "patternProperties": {
+        "^[a-zA-Z0-9]+$": {
+          "$ref": "#/definitions/Parameter"
+        }
+      },
+      "type": "object"
+    }
+""", decodeTo: JSONType.self)
+
+    }
+    
+    func testJSONTypeResources() throws {
+        
+        try _testJSONExtract(json:"""
+    {
+      "additionalProperties": false,
+      "patternProperties": {
+        "^[a-zA-Z0-9]+$": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/AWS::Serverless::Api"
+            },
+            {
+              "$ref": "#/definitions/AWS::Serverless::Function"
+            },
+            {
+              "$ref": "#/definitions/AWS::Serverless::SimpleTable"
+            },
+            {
+              "$ref": "#/definitions/CloudFormationResource"
+            }
+          ]
+        }
+      },
+      "type": "object"
+    }
+""", decodeTo: JSONType.self)
+    }
+    
+    func testJSONTYpeServerlessFunction() throws {
+
+        try _testJSONExtract(json:"""
+    {
+      "additionalProperties": false,
+      "properties": {
+
+        "Properties": {
+          "allOf": [
+             {
+               "anyOf": [
+                 {
+                   "properties": {
+                     "InlineCode": {
+                       "type": "string"
+                     }
+                   }
+                 },
+                 {
+                   "properties": {
+                     "CodeUri": {
+                       "anyOf": [
+                         {
+                           "type": [
+                             "string"
+                           ]
+                         },
+                         {
+                           "$ref": "#/definitions/AWS::Serverless::Function.S3Location"
+                         }
+                       ]
+                     }
+                   }
+                 }
+               ]
+             }
+          ]
+        }
+      },
+      "required": [
+        "Type",
+        "Properties"
+      ],
+      "type": "object"
+    }
+""", decodeTo: JSONType.self)
+
+    }
+    
+    
+    func testBasicJSONType() throws {
+        
+        try _testJSONExtract(json:"""
+                 {
+                   "properties": {
+                     "InlineCode": {
+                       "type": "string"
+                     }
+                   }
+                 }
+""",decodeTo: JSONType.self)
+    }
+    
+    internal func _testJSONExtract(json: String, decodeTo: Decodable.Type) throws {
+        let decoder = JSONDecoder()
+        let data = try XCTUnwrap(json.data(using: .utf8))
+        XCTAssertNoThrow(try decoder.decode(JSONType.self, from: data))
     }
 }
