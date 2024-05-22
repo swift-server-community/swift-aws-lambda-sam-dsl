@@ -318,13 +318,14 @@ struct JSONType: Decodable {
             self.type = [primitiveType]
         } else {
             // if it doesn't work, try to decode an array
-            // if it doesn't work neither, this is a programming error, raise an exception
-            let arrayOfPrimitiveType = try? container.decode([JSONPrimitiveType].self, forKey: .type)
-            self.type = arrayOfPrimitiveType ?? []
+            let arrayOfPrimitiveType = try? container.decodeIfPresent([JSONPrimitiveType].self, forKey: .type)
+            
+            // if it doesn't work, type is nil
+            self.type = arrayOfPrimitiveType
         }
-
         
-        if self.type?.count == 1, let type = self.type {
+        // if there is only one type, check the subtype
+        if let type = self.type, type.count == 1 {
             switch type[0] {
             case .string:
                 self.subType = .string(try StringSchema(from: decoder))
