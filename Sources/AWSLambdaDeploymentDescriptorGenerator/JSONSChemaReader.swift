@@ -182,7 +182,7 @@ enum JSONUnionType: Decodable {
 struct JSONType: Decodable {
 
     let type: [JSONPrimitiveType]?
-    let ref: String?
+    let reference: String?
     let subType: SubTypeSchema?
     let required: [String]?
     let description: String?
@@ -230,18 +230,23 @@ struct JSONType: Decodable {
     // https://json-schema.org/understanding-json-schema/reference/string
     struct StringSchema: Decodable {
         let pattern: String?
-        //     let minLength
-        //     let maxLength
-        //     let format: String // should be an enum to match specification
+        let minLength: Int?
+        let maxLength: Int?
+        
+        // not used in SAM Schema
+//        let format: String  
         
         enum CodingKeys: String, CodingKey {
             case pattern
+            case minLength
+            case maxLength
         }
         
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
-            pattern = try container.decodeIfPresent(String.self, forKey: .pattern)
-            
+            self.pattern = try container.decodeIfPresent(String.self, forKey: .pattern)
+            self.minLength = try container.decodeIfPresent(Int.self, forKey: .minLength)
+            self.maxLength = try container.decodeIfPresent(Int.self, forKey: .maxLength)
         }
     }
     
@@ -302,7 +307,7 @@ struct JSONType: Decodable {
     
     enum CodingKeys: String, CodingKey {
         case type
-        case ref = "$ref"
+        case reference = "$ref"
         case enumeration = "enum"
         case required
         case description
@@ -350,7 +355,7 @@ struct JSONType: Decodable {
         self.required = try container.decodeIfPresent([String].self, forKey: .required)
         self.description = try container.decodeIfPresent(String.self, forKey: .description)
         self.additionalProperties = try container.decodeIfPresent(Bool.self, forKey: .additionalProperties)
-        self.ref = try container.decodeIfPresent(String.self, forKey: .ref)
+        self.reference = try container.decodeIfPresent(String.self, forKey: .reference)
     }
     
     // MARK: accessor methods to easily access associated value of TypeSchema
@@ -358,21 +363,35 @@ struct JSONType: Decodable {
     // TODO: we should have one method for each TypeSchema
 
 
-    func getObject(for property:String) -> JSONUnionType? {
+    func object() -> ObjectSchema? {
+        if case let .object(schema) = self.subType {
+            return schema
+        }
+        return nil
+    }
+
+    func object(for property:String) -> JSONUnionType? {
         if case let .object(schema) = self.subType {
             return schema.properties?[property]
         }
         return nil
     }
 
-    func getPattern() -> String? {
+    func stringSchema() -> StringSchema? {
         if case let .string(schema) = self.subType {
-            return schema.pattern
+            return schema
         }
         return nil
     }
     
-    func getItems() -> JSONType? {
+    func arraySchema() -> ArraySchema? {
+        if case let .array(schema) = self.subType {
+            return schema
+        }
+        return nil
+    }
+
+    func items() -> JSONType? {
         if case let .array(schema) = self.subType {
             return schema.items
         }

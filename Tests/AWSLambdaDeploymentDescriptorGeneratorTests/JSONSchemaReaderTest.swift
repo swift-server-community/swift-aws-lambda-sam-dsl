@@ -54,22 +54,22 @@ final class JSONSchemaReaderTest: XCTestCase {
         let fruits = try XCTUnwrap(schema.properties?["fruits"])
         let fruitType = try XCTUnwrap(fruits.jsonType().type)
         XCTAssertTrue(fruitType.contains(.array))
-        XCTAssertTrue(fruits.jsonType().getItems()?.type?.contains([.string]) ?? false)
+        XCTAssertTrue(fruits.jsonType().items()?.type?.contains([.string]) ?? false)
         
         let testArrayMultipleTypes = try XCTUnwrap(schema.properties?["testArrayMultipleTypes"])
-        XCTAssertTrue(testArrayMultipleTypes.jsonType().getItems()?.type?.contains([.string, .boolean]) ?? false)
+        XCTAssertTrue(testArrayMultipleTypes.jsonType().items()?.type?.contains([.string, .boolean]) ?? false)
         
         let testAnyOfArrayItem = try XCTUnwrap(schema.properties?["testAnyOfArrayItem"])
         if case .anyOf(let ai) = testAnyOfArrayItem {
             XCTAssertTrue(ai.count == 2)
             XCTAssertTrue(ai[0].type?.contains([.string]) ?? false)
-            XCTAssertTrue(ai[1].ref == "#/definitions/AWS::Serverless::Api.S3Location")
+            XCTAssertTrue(ai[1].reference == "#/definitions/AWS::Serverless::Api.S3Location")
         } else {
             XCTFail("Not an [ArrayItem]")
         }
 
         let vegetable = try XCTUnwrap(schema.properties?["vegetables"])
-        XCTAssertTrue(vegetable.jsonType().getItems()?.ref == "#/definitions/veggie")
+        XCTAssertTrue(vegetable.jsonType().items()?.reference == "#/definitions/veggie")
         
         XCTAssertTrue(schema.definitions?.count == 2)
         let veggie = try XCTUnwrap(schema.definitions?["veggie"])
@@ -77,11 +77,11 @@ final class JSONSchemaReaderTest: XCTestCase {
         XCTAssertTrue(veggieType.contains(.object))
         XCTAssertTrue(veggie.jsonType().required?.count == 2)
         
-        let veggieName = try XCTUnwrap(veggie.jsonType().getObject(for: "veggieName"))
+        let veggieName = try XCTUnwrap(veggie.jsonType().object(for: "veggieName"))
         let veggieNameType = try XCTUnwrap(veggieName.jsonType().type)
         XCTAssertTrue(veggieNameType.contains(.string))
         
-        let veggieLike = try XCTUnwrap(veggie.jsonType().getObject(for: "veggieLike"))
+        let veggieLike = try XCTUnwrap(veggie.jsonType().object(for: "veggieLike"))
         let veggieLikeType = try XCTUnwrap(veggieLike.jsonType().type)
         XCTAssertTrue(veggieLikeType.contains(.boolean))
     }
@@ -114,7 +114,7 @@ final class JSONSchemaReaderTest: XCTestCase {
         if case let .object(schema) = t2.subType {
             let t3 = try XCTUnwrap(schema.patternProperties?["^[a-zA-Z0-9]+$"])
             XCTAssertTrue(t3.any()?.count == 4)
-            XCTAssertTrue(t3.any()?[0].ref == "#/definitions/AWS::Serverless::Api")
+            XCTAssertTrue(t3.any()?[0].reference == "#/definitions/AWS::Serverless::Api")
         } else {
             XCTFail("the subschema is not an object")
         }
@@ -138,7 +138,7 @@ final class JSONSchemaReaderTest: XCTestCase {
             if case let .array(schema) = t4[1].subType {
                 XCTAssertTrue(schema.items?.type?.count == 1)
                 XCTAssertTrue(schema.items?.type?.contains([.string]) ?? false)
-                XCTAssertTrue(schema.items?.getPattern() == "^[a-zA-Z0-9]+$")
+                XCTAssertTrue(schema.items?.stringSchema()?.pattern == "^[a-zA-Z0-9]+$")
             } else {
                 XCTFail("the subschema is not an array")
             }
@@ -272,9 +272,39 @@ final class JSONSchemaReaderTest: XCTestCase {
 """,decodeTo: JSONType.self)
     }
     
-    internal func _testJSONExtract(json: String, decodeTo type: Decodable.Type) throws {
+    func testMaxLengthStringJSONType() throws {
+        
+        let testType = try _testJSONExtract(json:"""
+                 {
+                   "type": "object",
+                   "properties": {
+                         "Description": {
+                           "description": "Template description",
+                           "maxLength": 1024,
+                           "type": "string"
+                         }
+                   }
+                 }
+""",decodeTo: JSONType.self) as! JSONType
+        
+        if case let .type(descriptionType) = testType.object(for: "Description") {
+            if case let .string(schema) = descriptionType.subType {
+
+                XCTAssertTrue(schema.maxLength == 1024)
+                
+            } else {
+                XCTFail("Not a JSONType with subType string")
+            }
+        } else {
+            XCTFail("Not a JSONUnionType schema")
+        }
+        
+    }
+    
+    @discardableResult
+    internal func _testJSONExtract(json: String, decodeTo type: Decodable.Type) throws -> any Decodable {
         let decoder = JSONDecoder()
         let data = try XCTUnwrap(json.data(using: .utf8))
-        XCTAssertNoThrow(try decoder.decode(type, from: data))
+        return try decoder.decode(type, from: data)
     }
 }
