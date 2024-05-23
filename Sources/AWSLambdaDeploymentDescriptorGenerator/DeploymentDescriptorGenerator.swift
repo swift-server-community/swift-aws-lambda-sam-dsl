@@ -70,8 +70,6 @@ public struct DeploymentDescriptorGenerator {
         
         print("Schema Information:")
         print("  - Schema URL: \(schema.schema)")
-        print("  - Additional Properties Allowed: \(schema.additionalProperties)")
-        print("  - Required Properties: \(schema.required?.joined(separator: ", "))")
         print("  - Overall Type: \(schema.type)")
         
         if let properties = schema.properties {
