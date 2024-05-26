@@ -34,7 +34,7 @@ final class JSONSchemaReaderTest: XCTestCase {
         XCTAssertThrowsError(try decoder.decode(JSONSchema.self, from: data))
     }
 
-
+    
     func testSimpleJSONSchemaReader() throws {
         
         // load schema from file (the file must be referenced in the Resource section of Package.swift
@@ -98,7 +98,6 @@ final class JSONSchemaReaderTest: XCTestCase {
 
         let decoder = JSONDecoder()
         let schema = try decoder.decode(JSONSchema.self, from: schemaData)
-        print(schema)
         
         // validate top level properties 
         XCTAssertTrue(schema.schema == .draft4)

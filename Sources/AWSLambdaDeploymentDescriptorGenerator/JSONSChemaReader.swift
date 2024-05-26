@@ -7,37 +7,35 @@
  */
 struct JSONSchema: Decodable {
     let id: String?
-    let schema: JSONSchemaDialect
+    let schema: JSONSchemaDialectVersion
     let description: String?
     let type: JSONPrimitiveType
     let properties: [String: JSONUnionType]?
     let additionalProperties: Bool?
-    let definitions: [String: JSONUnionType]?
     let required : [String]?
-    
-    // standard coding keys
+    let definitions: [String: JSONUnionType]?
+
     enum CodingKeys: String, CodingKey {
         case id = "$id"
         case schema = "$schema"
+        case definitions = "$defs"
         case description
         case type
         case properties
         case additionalProperties
-        case definitions = "$defs"
         case required
     }
-    // keys for draft4 and before
     enum CodingKeys_draft4: String, CodingKey {
         case definitions = "definitions"
     }
-        
+
     // implement a custom init(from:) method to support different schema version
     init(from decoder: any Decoder) throws {
         
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
         self.id = try container.decodeIfPresent(String.self, forKey: .id)
-        self.schema = try container.decode(JSONSchemaDialect.self, forKey: .schema)
+        self.schema = try container.decode(JSONSchemaDialectVersion.self, forKey: .schema)
         self.description = try container.decodeIfPresent(String.self, forKey: .description)
         self.type = try container.decode(JSONPrimitiveType.self, forKey: .type)
         self.properties = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .properties)
@@ -47,20 +45,20 @@ struct JSONSchema: Decodable {
         // support multiple version of the "definition" key, depending on JSON Schema version
         // introduced by version 2019-09
         // https://json-schema.org/draft/2019-09/release-notes#semi-incompatible-changes
-        // TODO: move this logic to JSONSchemaDialect, in a generic way (????)
-        switch self.schema {
-        case .v2019_09, .v2020_12:
-            self.definitions = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .definitions)
-        case .draft4:
-            let container = try decoder.container(keyedBy: CodingKeys_draft4.self)
-            self.definitions = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .definitions)
-        }
+       switch self.schema {
+       case .v2019_09, .v2020_12:
+             self.definitions = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .definitions)
+       case .draft4:
+             let container = try decoder.container(keyedBy: CodingKeys_draft4.self)
+             self.definitions = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .definitions)
+       }
     }
+
 }
 
 // This represents the multiple versions of a JSON Schema
 // https://json-schema.org/specification-links
-enum JSONSchemaDialect: String, Equatable, Decodable {
+enum JSONSchemaDialectVersion: String, Equatable, Decodable {
     
     // the versions we support
     case draft4 = "http://json-schema.org/draft-04/schema#"
@@ -183,13 +181,13 @@ struct JSONType: Decodable {
 
     let type: [JSONPrimitiveType]?
     let reference: String?
-    let subType: SubTypeSchema?
     let required: [String]?
     let description: String?
     let additionalProperties: Bool?
     let enumeration: [String]?
     
-    
+    let subType: SubTypeSchema?
+
     // Nested enums for specific schema types
     indirect enum SubTypeSchema {
         case string(StringSchema)
