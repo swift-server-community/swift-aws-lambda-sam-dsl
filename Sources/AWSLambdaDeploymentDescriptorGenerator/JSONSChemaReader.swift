@@ -5,7 +5,7 @@
  
  We do not intent to create a generic JSON SChema decoder.
  */
-struct JSONSchema: Decodable {
+struct JSONSchema: Decodable, Sendable {
     let id: String?
     let schema: JSONSchemaDialectVersion
     let description: String?
@@ -58,7 +58,7 @@ struct JSONSchema: Decodable {
 
 // This represents the multiple versions of a JSON Schema
 // https://json-schema.org/specification-links
-enum JSONSchemaDialectVersion: String, Equatable, Decodable {
+enum JSONSchemaDialectVersion: String, Equatable, Decodable, Sendable {
     
     // the versions we support
     case draft4 = "http://json-schema.org/draft-04/schema#"
@@ -86,7 +86,7 @@ enum JSONSchemaDialectVersion: String, Equatable, Decodable {
 
 // A JSON primitive type
 // https://json-schema.org/understanding-json-schema/reference/type
-enum JSONPrimitiveType: Decodable, Equatable {
+enum JSONPrimitiveType: Decodable, Equatable, Sendable {
     case string
     case object
     case boolean
@@ -119,7 +119,7 @@ enum JSONPrimitiveType: Decodable, Equatable {
 }
 
 // a JSON Union Type
-enum JSONUnionType: Decodable {
+enum JSONUnionType: Decodable, Sendable {
     case anyOf([JSONType])
     case allOf([JSONUnionType])
     case type(JSONType)
@@ -177,7 +177,7 @@ enum JSONUnionType: Decodable {
 }
 
 // a JSON type
-struct JSONType: Decodable {
+struct JSONType: Decodable, Sendable {
 
     let type: [JSONPrimitiveType]?
     let reference: String?
@@ -195,13 +195,12 @@ struct JSONType: Decodable {
         case array(ArraySchema)
         case number(NumberSchema)
         case boolean
-        case enumeration([String])
         case null
     }
     
     // for Object
     // https://json-schema.org/understanding-json-schema/reference/object
-    struct ObjectSchema: Decodable {
+    struct ObjectSchema: Decodable, Sendable {
         enum CodingKeys: String, CodingKey {
             case properties
             case patternProperties
@@ -226,7 +225,7 @@ struct JSONType: Decodable {
     
     // for String
     // https://json-schema.org/understanding-json-schema/reference/string
-    struct StringSchema: Decodable {
+    struct StringSchema: Decodable, Sendable {
         let pattern: String?
         let minLength: Int?
         let maxLength: Int?
@@ -250,7 +249,7 @@ struct JSONType: Decodable {
     
     // for Array type
     // https://json-schema.org/understanding-json-schema/reference/array
-    struct ArraySchema: Decodable {
+    struct ArraySchema: Decodable, Sendable {
         let items: JSONType?
         let minItems: Int?
         
@@ -276,7 +275,7 @@ struct JSONType: Decodable {
     
     // for Number
     // https://json-schema.org/understanding-json-schema/reference/numeric
-    struct NumberSchema: Decodable {
+    struct NumberSchema: Decodable, Sendable {
         let multipleOf: Double?
         let minimum: Double?
         let exclusiveMinimum: Bool?

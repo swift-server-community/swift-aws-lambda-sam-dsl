@@ -47,9 +47,9 @@ public struct SAMDeploymentDescriptor: Encodable {
   }
 }
 
-public protocol SAMResource: Encodable, Equatable {}
-public protocol SAMResourceType: Encodable, Equatable {}
-public protocol SAMResourceProperties: Encodable {}
+public protocol SAMResource: Encodable, Equatable, Sendable {}
+public protocol SAMResourceType: Encodable, Equatable, Sendable {}
+public protocol SAMResourceProperties: Encodable, Sendable {}
 
 // public protocol Table: SAMResource { 
 //   func type() -> String

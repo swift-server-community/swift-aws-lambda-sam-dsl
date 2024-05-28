@@ -15,16 +15,26 @@ let package = Package(
         .library(name: "AWSLambdaDeploymentDescriptor", type: .dynamic, targets: ["AWSLambdaDeploymentDescriptor"]),
     ],
     dependencies: [
+        .package(url: "https://github.com/hummingbird-project/swift-mustache", branch: "main"),
     ],
     targets: [
+
+        // SAM Deployment Descriptor DSL
         .target(
             name: "AWSLambdaDeploymentDescriptor",
             path: "Sources/AWSLambdaDeploymentDescriptor"
+//            swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
         ),
+
         // SAM Deployment Descriptor Generator
-        .target(
+        .executableTarget(
             name: "AWSLambdaDeploymentDescriptorGenerator",
-            path: "Sources/AWSLambdaDeploymentDescriptorGenerator"
+            dependencies: [
+                .product(name: "Mustache", package: "swift-mustache")
+            ],
+            path: "Sources/AWSLambdaDeploymentDescriptorGenerator",
+            exclude: ["Resources"],
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]      
         ),
         .plugin(
             name: "AWSLambdaDeployer",
