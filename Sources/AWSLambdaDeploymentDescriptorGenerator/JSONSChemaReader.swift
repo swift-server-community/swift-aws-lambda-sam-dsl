@@ -195,7 +195,6 @@ struct JSONType: Decodable {
         case array(ArraySchema)
         case number(NumberSchema)
         case boolean
-        case enumeration([String])
         case null
     }
     
