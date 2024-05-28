@@ -5,15 +5,15 @@
  
  We do not intent to create a generic JSON SChema decoder.
  */
-struct JSONSchema: Decodable, Sendable {
-    let id: String?
-    let schema: JSONSchemaDialectVersion
-    let description: String?
-    let type: JSONPrimitiveType
-    let properties: [String: JSONUnionType]?
-    let additionalProperties: Bool?
-    let required : [String]?
-    let definitions: [String: JSONUnionType]?
+public struct JSONSchema: Decodable, Sendable {
+    public let id: String?
+    public let schema: JSONSchemaDialectVersion
+    public let description: String?
+    public let type: JSONPrimitiveType
+    public let properties: [String: JSONUnionType]?
+    public let additionalProperties: Bool?
+    public let required : [String]?
+    public let definitions: [String: JSONUnionType]?
 
     enum CodingKeys: String, CodingKey {
         case id = "$id"
@@ -30,7 +30,7 @@ struct JSONSchema: Decodable, Sendable {
     }
 
     // implement a custom init(from:) method to support different schema version
-    init(from decoder: any Decoder) throws {
+    public init(from decoder: any Decoder) throws {
         
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
@@ -58,14 +58,14 @@ struct JSONSchema: Decodable, Sendable {
 
 // This represents the multiple versions of a JSON Schema
 // https://json-schema.org/specification-links
-enum JSONSchemaDialectVersion: String, Equatable, Decodable, Sendable {
+public enum JSONSchemaDialectVersion: String, Equatable, Decodable, Sendable {
     
     // the versions we support
     case draft4 = "http://json-schema.org/draft-04/schema#"
     case v2019_09 = "https://json-schema.org/draft/2019-09/schema"
     case v2020_12 = "https://json-schema.org/draft/2020-12/schema"
     
-    init(from decoder: any Decoder) throws {
+    public init(from decoder: any Decoder) throws {
         let container = try decoder.singleValueContainer()
         let schemaString = try container.decode(String.self)
         
@@ -86,7 +86,7 @@ enum JSONSchemaDialectVersion: String, Equatable, Decodable, Sendable {
 
 // A JSON primitive type
 // https://json-schema.org/understanding-json-schema/reference/type
-enum JSONPrimitiveType: Decodable, Equatable, Sendable {
+public enum JSONPrimitiveType: Decodable, Equatable, Sendable {
     case string
     case object
     case boolean
@@ -95,7 +95,7 @@ enum JSONPrimitiveType: Decodable, Equatable, Sendable {
     case number
     case null
     
-    init(from decoder: any Decoder) throws {
+    public init(from decoder: any Decoder) throws {
         let container = try decoder.singleValueContainer()
         let value = try container.decode(String.self)
         if value == "string" {
@@ -119,7 +119,7 @@ enum JSONPrimitiveType: Decodable, Equatable, Sendable {
 }
 
 // a JSON Union Type
-enum JSONUnionType: Decodable, Sendable {
+public enum JSONUnionType: Decodable, Sendable {
     case anyOf([JSONType])
     case allOf([JSONUnionType])
     case type(JSONType)
@@ -129,7 +129,7 @@ enum JSONUnionType: Decodable, Sendable {
         case allOf
     }
     
-    init(from decoder: any Decoder) throws {
+    public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         var allKeys = ArraySlice(container.allKeys)
         if let onlyKey = allKeys.popFirst(), allKeys.isEmpty  {
@@ -151,7 +151,7 @@ enum JSONUnionType: Decodable, Sendable {
     }
     
     // convenience function to extract a JSONType from this enum
-    func jsonType() -> JSONType {
+    public func jsonType() -> JSONType {
         guard case .type(let jsonType) = self else {
             fatalError("not a JSONType")
         }
@@ -159,7 +159,7 @@ enum JSONUnionType: Decodable, Sendable {
         return jsonType
     }
     
-    func any() -> [JSONType]? {
+    public func any() -> [JSONType]? {
         guard case .anyOf(let anyOf) = self else {
             fatalError("not an anyOf")
         }
@@ -167,7 +167,7 @@ enum JSONUnionType: Decodable, Sendable {
         return anyOf
     }
     
-    func all() -> [JSONUnionType]? {
+    public func all() -> [JSONUnionType]? {
         guard case .allOf(let allOf) = self else {
             fatalError("not an allOf")
         }
@@ -177,19 +177,19 @@ enum JSONUnionType: Decodable, Sendable {
 }
 
 // a JSON type
-struct JSONType: Decodable, Sendable {
+public struct JSONType: Decodable, Sendable {
 
-    let type: [JSONPrimitiveType]?
-    let reference: String?
-    let required: [String]?
-    let description: String?
-    let additionalProperties: Bool?
-    let enumeration: [String]?
+    public let type: [JSONPrimitiveType]?
+    public let reference: String?
+    public let required: [String]?
+    public let description: String?
+    public let additionalProperties: Bool?
+    public let enumeration: [String]?
     
-    let subType: SubTypeSchema?
+    public let subType: SubTypeSchema?
 
     // Nested enums for specific schema types
-    indirect enum SubTypeSchema {
+    public indirect enum SubTypeSchema: Sendable {
         case string(StringSchema)
         case object(ObjectSchema)
         case array(ArraySchema)
@@ -200,7 +200,7 @@ struct JSONType: Decodable, Sendable {
     
     // for Object
     // https://json-schema.org/understanding-json-schema/reference/object
-    struct ObjectSchema: Decodable, Sendable {
+    public struct ObjectSchema: Decodable, Sendable {
         enum CodingKeys: String, CodingKey {
             case properties
             case patternProperties
@@ -208,13 +208,13 @@ struct JSONType: Decodable, Sendable {
             case maxProperties
         }
         
-        let properties: [String: JSONUnionType]?
-        let patternProperties: [String: JSONUnionType]?
-        let minProperties: Int?
-        let maxProperties: Int?
+        public let properties: [String: JSONUnionType]?
+        public let patternProperties: [String: JSONUnionType]?
+        public let minProperties: Int?
+        public let maxProperties: Int?
 
         // Validate required within string array if present
-        init(from decoder: Decoder) throws {
+        public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             self.properties = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .properties)
             self.patternProperties = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .patternProperties)
@@ -225,10 +225,10 @@ struct JSONType: Decodable, Sendable {
     
     // for String
     // https://json-schema.org/understanding-json-schema/reference/string
-    struct StringSchema: Decodable, Sendable {
-        let pattern: String?
-        let minLength: Int?
-        let maxLength: Int?
+    public struct StringSchema: Decodable, Sendable {
+        public let pattern: String?
+        public let minLength: Int?
+        public let maxLength: Int?
         
         // not used in SAM Schema
 //        let format: String  
@@ -239,7 +239,7 @@ struct JSONType: Decodable, Sendable {
             case maxLength
         }
         
-        init(from decoder: Decoder) throws {
+        public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             self.pattern = try container.decodeIfPresent(String.self, forKey: .pattern)
             self.minLength = try container.decodeIfPresent(Int.self, forKey: .minLength)
@@ -249,16 +249,16 @@ struct JSONType: Decodable, Sendable {
     
     // for Array type
     // https://json-schema.org/understanding-json-schema/reference/array
-    struct ArraySchema: Decodable, Sendable {
-        let items: JSONType?
-        let minItems: Int?
+    public struct ArraySchema: Decodable, Sendable {
+        public let items: JSONType?
+        public let minItems: Int?
         
         enum CodingKeys: String, CodingKey {
             case items
             case minItems
         }
         
-        init(from decoder: Decoder) throws {
+        public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             items = try container.decodeIfPresent(JSONType.self, forKey: .items)
             minItems = try container.decodeIfPresent(Int.self, forKey: .minItems)
@@ -275,12 +275,12 @@ struct JSONType: Decodable, Sendable {
     
     // for Number
     // https://json-schema.org/understanding-json-schema/reference/numeric
-    struct NumberSchema: Decodable, Sendable {
-        let multipleOf: Double?
-        let minimum: Double?
-        let exclusiveMinimum: Bool?
-        let maximum: Double?
-        let exclusiveMaximum: Bool?
+    public struct NumberSchema: Decodable, Sendable {
+        public let multipleOf: Double?
+        public let minimum: Double?
+        public let exclusiveMinimum: Bool?
+        public let maximum: Double?
+        public let exclusiveMaximum: Bool?
         
         enum CodingKeys: String, CodingKey {
             case multipleOf
@@ -290,7 +290,7 @@ struct JSONType: Decodable, Sendable {
             case exclusiveMaximum
         }
         
-        init(from decoder: Decoder) throws {
+        public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             
             multipleOf = try container.decodeIfPresent(Double.self, forKey: .multipleOf)
@@ -311,7 +311,7 @@ struct JSONType: Decodable, Sendable {
         case additionalProperties
     }
     
-    init(from decoder: any Decoder) throws {
+    public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
         // check if this is a single value or an array
@@ -360,35 +360,35 @@ struct JSONType: Decodable, Sendable {
     // TODO: we should have one method for each TypeSchema
 
 
-    func object() -> ObjectSchema? {
+    public func object() -> ObjectSchema? {
         if case let .object(schema) = self.subType {
             return schema
         }
         return nil
     }
 
-    func object(for property:String) -> JSONUnionType? {
+    public func object(for property:String) -> JSONUnionType? {
         if case let .object(schema) = self.subType {
             return schema.properties?[property]
         }
         return nil
     }
 
-    func stringSchema() -> StringSchema? {
+    public func stringSchema() -> StringSchema? {
         if case let .string(schema) = self.subType {
             return schema
         }
         return nil
     }
     
-    func arraySchema() -> ArraySchema? {
+    public func arraySchema() -> ArraySchema? {
         if case let .array(schema) = self.subType {
             return schema
         }
         return nil
     }
 
-    func items() -> JSONType? {
+    public func items() -> JSONType? {
         if case let .array(schema) = self.subType {
             return schema.items
         }
