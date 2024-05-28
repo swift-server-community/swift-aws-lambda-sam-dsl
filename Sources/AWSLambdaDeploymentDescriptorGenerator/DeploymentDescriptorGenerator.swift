@@ -1,15 +1,14 @@
 /**
 
-TODO 
+ TODO:
 
-1. read `samtranslator schema.json`
-2. generate `../DeploymentDescriptor.swift`
+ 1. read `samtranslator schema.json`
+ 2. generate `../DeploymentDescriptor.swift`
 
-*/
+ */
 import Foundation
 import HummingbirdMustache
 import Logging
-
 
 public protocol DeploymentDescriptorGeneratorCommand {
     var inputFile: String? { get }
@@ -42,60 +41,55 @@ public struct DeploymentDescriptorGenerator {
     }
 
     public func generate() {
-        
         // generate code here
-        
+
         let filePath = Bundle.module.path(forResource: "SamTranslatorSchema", ofType: "json") ?? ""
         let url = URL(fileURLWithPath: filePath)
-        
-        do  {
+
+        do {
             let schemaData = try Data(contentsOf: url)
             do {
-                let schema = try analyzeSAMSchema(from: schemaData)
+                _ = try analyzeSAMSchema(from: schemaData)
                 // You can now access and analyze the schema information stored in the `schema` struct
             } catch {
                 print("Error analyzing schema: \(error)")
             }
-            
+
         } catch {
             print("Error getting schemaData contents of URL: \(error)")
         }
-        
-        
     }
-    
+
     func analyzeSAMSchema(from jsonData: Data) throws -> JSONSchema {
         let decoder = JSONDecoder()
         let schema = try decoder.decode(JSONSchema.self, from: jsonData)
-        
+
         print("Schema Information:")
         print("  - Schema URL: \(schema.schema)")
-        print("  - Overall Type: \(schema.type)")
-        
+        print("  - Overall Type: \(schema.type ?? [.null])")
+
         if let properties = schema.properties {
             print("\n  Properties:")
             for (name, propertyType) in properties {
                 print("    - \(name): \(propertyType)") // Briefly describe the type
             }
         }
-        
+
         if let definitions = schema.definitions {
             print("\n  Definitions:")
             for (name, definitionType) in definitions {
                 print("    - \(name): \(definitionType)") // Briefly describe the type
             }
         }
-        
+
         return schema
     }
 
-
-    
     func getModelFiles() -> [String] {
         if let input = self.command.inputFile {
             return [input]
-        } else if let inputFolder = self.command.inputFolder {
-            if let module = command.module {
+        } else if (self.command.inputFolder) != nil {
+            if (command.module) != nil {
                 return []
 //                return Glob.entries(pattern: "\(inputFolder)/\(module)*.json")
             }
@@ -105,12 +99,7 @@ public struct DeploymentDescriptorGenerator {
             return []
         }
     }
-    
-    
-
-
 }
-
 
 extension String {
     /// Only writes to file if the string contents are different to the file contents. This is used to stop XCode rebuilding and reindexing files unnecessarily.

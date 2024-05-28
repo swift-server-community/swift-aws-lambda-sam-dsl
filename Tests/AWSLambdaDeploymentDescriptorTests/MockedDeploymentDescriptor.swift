@@ -12,9 +12,9 @@
 //
 // ===----------------------------------------------------------------------===//
 
+@testable import AWSLambdaDeploymentDescriptor
 import Foundation
 import XCTest
-@testable import AWSLambdaDeploymentDescriptor
 
 protocol MockDeploymentDescriptorBehavior {
     func toJSON() -> String
@@ -22,7 +22,6 @@ protocol MockDeploymentDescriptorBehavior {
 }
 
 struct MockDeploymentDescriptor: MockDeploymentDescriptorBehavior {
-
     let deploymentDescriptor: SAMDeploymentDescriptor
 
     init(withFunction: Bool = true,
@@ -32,21 +31,21 @@ struct MockDeploymentDescriptor: MockDeploymentDescriptorBehavior {
          environmentVariable: SAMEnvironmentVariable? = nil,
          additionalResources: [Resource<ResourceType>] = []) {
         if withFunction {
-
             let properties = ServerlessFunctionProperties(
-                    codeUri: codeURI,
-                    architecture: architecture,
-                    eventSources: eventSource ?? [],
-                    environment: environmentVariable ?? SAMEnvironmentVariable.none)
+                codeUri: codeURI,
+                architecture: architecture,
+                eventSources: eventSource ?? [],
+                environment: environmentVariable ?? SAMEnvironmentVariable.none
+            )
             let serverlessFunction = Resource<ResourceType>(
-                    type: .function,
-                    properties: properties,
-                    name: "TestLambda")
+                type: .function,
+                properties: properties,
+                name: "TestLambda"
+            )
 
             self.deploymentDescriptor = SAMDeploymentDescriptor(
                 description: "A SAM template to deploy a Swift Lambda function",
-                resources: [ serverlessFunction ] + additionalResources
-
+                resources: [serverlessFunction] + additionalResources
             )
         } else {
             self.deploymentDescriptor = SAMDeploymentDescriptor(
@@ -55,21 +54,21 @@ struct MockDeploymentDescriptor: MockDeploymentDescriptorBehavior {
             )
         }
     }
+
     func toJSON() -> String {
-        return self.deploymentDescriptor.toJSON(pretty: false)
+        self.deploymentDescriptor.toJSON(pretty: false)
     }
+
     func toYAML() -> String {
-        return self.deploymentDescriptor.toYAML()
+        self.deploymentDescriptor.toYAML()
     }
 }
 
 struct MockDeploymentDescriptorBuilder: MockDeploymentDescriptorBehavior {
-
     static let functionName = "TestLambda"
     let deploymentDescriptor: DeploymentDescriptor
 
     init(withResource resource: any BuilderResource) {
-
         self.deploymentDescriptor = DeploymentDescriptor {
             "A SAM template to deploy a Swift Lambda function"
             resource
@@ -82,7 +81,6 @@ struct MockDeploymentDescriptorBuilder: MockDeploymentDescriptorBehavior {
          eventSource: Resource<EventSourceType>,
          environmentVariable: [String: String]) {
         if withFunction {
-
             self.deploymentDescriptor = DeploymentDescriptor {
                 "A SAM template to deploy a Swift Lambda function"
 
@@ -106,16 +104,18 @@ struct MockDeploymentDescriptorBuilder: MockDeploymentDescriptorBehavior {
     }
 
     func toJSON() -> String {
-        return self.deploymentDescriptor.samDeploymentDescriptor.toJSON(pretty: false)
+        self.deploymentDescriptor.samDeploymentDescriptor.toJSON(pretty: false)
     }
+
     func toYAML() -> String {
-        return self.deploymentDescriptor.samDeploymentDescriptor.toYAML()
+        self.deploymentDescriptor.samDeploymentDescriptor.toYAML()
     }
 
     static func packageDir() -> String {
-        return "/\(functionName)"
+        "/\(self.functionName)"
     }
+
     static func packageZip() -> String {
-        return "/\(functionName).zip"
+        "/\(self.functionName).zip"
     }
 }

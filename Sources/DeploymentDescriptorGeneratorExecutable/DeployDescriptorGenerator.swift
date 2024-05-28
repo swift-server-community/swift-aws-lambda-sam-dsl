@@ -1,8 +1,8 @@
 
 import ArgumentParser
+import AWSLambdaDeploymentDescriptorGenerator
 import Foundation
 import Logging
-import AWSLambdaDeploymentDescriptorGenerator
 
 @main
 struct Command: AsyncParsableCommand, DeploymentDescriptorGeneratorCommand {
@@ -30,21 +30,20 @@ struct Command: AsyncParsableCommand, DeploymentDescriptorGeneratorCommand {
     @Flag(name: .long, inversion: .prefixedNo, help: "Output files")
     var output: Bool = true
 
- 
     @Option(name: .long, help: "Log Level (trace, debug, info, error)")
     var logLevel: String?
 
     static var rootPath: String {
-        return #file
+        #file
             .split(separator: "/", omittingEmptySubsequences: false)
             .dropLast(3)
             .map { String(describing: $0) }
             .joined(separator: "/")
     }
 
-    static var defaultOutputFolder: String { return "\(rootPath)/awsLambda/output" }
-    static var defaultInputFolder: String { return "\(rootPath)/awsLambda/inputs" }
-    static var defaultEndpoints: String { return "\(rootPath)/awsLambda/json" }
+    static var defaultOutputFolder: String { "\(rootPath)/awsLambda/output" }
+    static var defaultInputFolder: String { "\(rootPath)/awsLambda/inputs" }
+    static var defaultEndpoints: String { "\(rootPath)/awsLambda/json" }
 
     func run() async throws {
         try await DeploymentDescriptorGenerator(command: self).generate()

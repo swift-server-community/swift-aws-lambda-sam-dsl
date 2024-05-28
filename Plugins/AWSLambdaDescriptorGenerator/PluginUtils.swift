@@ -98,6 +98,7 @@ struct Utils {
             }
         }
     }
+
     enum ProcessLogLevel: Comparable {
         case silent
         case output(outputIndent: Int)
@@ -127,4 +128,3 @@ struct Utils {
         }
     }
 }
-

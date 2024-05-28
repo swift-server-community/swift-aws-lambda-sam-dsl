@@ -57,11 +57,11 @@ public struct DeploymentDescriptor {
         _ description: String,
         _ resources: [Resource<ResourceType>]...
     ) -> (String?, [Resource<ResourceType>]) {
-        return (description, resources.flatMap { $0 })
+        (description, resources.flatMap { $0 })
     }
 
     public static func buildBlock(_ resources: [Resource<ResourceType>]...) -> (String?, [Resource<ResourceType>]) {
-        return (nil, resources.flatMap { $0 })
+        (nil, resources.flatMap { $0 })
     }
 
     public static func buildFinalResult(_ function: (String?, [Resource<ResourceType>])) -> DeploymentDescriptor {
@@ -79,11 +79,10 @@ public struct DeploymentDescriptor {
     public static func buildExpression(_ expression: any BuilderResource) -> [Resource<ResourceType>] {
         expression.resource()
     }
-
 }
 
 public protocol BuilderResource {
-  func resource() -> [Resource<ResourceType>]
+    func resource() -> [Resource<ResourceType>]
 }
 
 // MARK: Function resource
@@ -107,12 +106,12 @@ public struct Function: BuilderResource {
         properties: ServerlessFunctionProperties
     ) {
         self._underlying = Resource<ResourceType>(
-                type: .function,
-                properties: properties,
-                name: name
-            )
+            type: .function,
+            properties: properties,
+            name: name
+        )
     }
-    
+
     public init(
         name: String,
         architecture: ServerlessFunctionProperties.Architectures = .defaultArchitecture(),
@@ -164,7 +163,7 @@ public struct Function: BuilderResource {
 
     // this method fails when the package does not exist at path
     public func resource() -> [Resource<ResourceType>] {
-        let functionResource = [ self._underlying ]
+        let functionResource = [self._underlying]
         let additionalQueueResources = self.collectQueueResources()
 
         return functionResource + additionalQueueResources
@@ -176,7 +175,7 @@ public struct Function: BuilderResource {
     // 2. the developer supplied value in Function() definition
     // 3. a default value
     // func is public for testability
-    internal static func packagePath(name: String, codeUri: String?) throws -> String {
+    static func packagePath(name: String, codeUri: String?) throws -> String {
         // propose a default path unless the --archive-path argument was used
         // --archive-path argument value must match the value given to the archive plugin --output-path argument
         var lambdaPackage =
@@ -239,20 +238,20 @@ public struct Function: BuilderResource {
         public static func buildBlock(_ description: String) -> (
             String?, EventSources, [String: String]
         ) {
-            return (description, EventSources.none, [:])
+            (description, EventSources.none, [:])
         }
 
         public static func buildBlock(
             _ description: String,
             _ events: EventSources
         ) -> (String?, EventSources, [String: String]) {
-            return (description, events, [:])
+            (description, events, [:])
         }
 
         public static func buildBlock(_ events: EventSources) -> (
             String?, EventSources, [String: String]
         ) {
-            return (nil, events, [:])
+            (nil, events, [:])
         }
 
         public static func buildBlock(
@@ -260,14 +259,14 @@ public struct Function: BuilderResource {
             _ events: EventSources,
             _ variables: EnvironmentVariables
         ) -> (String?, EventSources, [String: String]) {
-            return (description, events, variables.environmentVariables)
+            (description, events, variables.environmentVariables)
         }
 
         public static func buildBlock(
             _ events: EventSources,
             _ variables: EnvironmentVariables
         ) -> (String?, EventSources, [String: String]) {
-            return (nil, events, variables.environmentVariables)
+            (nil, events, variables.environmentVariables)
         }
 
         public static func buildBlock(
@@ -275,14 +274,14 @@ public struct Function: BuilderResource {
             _ variables: EnvironmentVariables,
             _ events: EventSources
         ) -> (String?, EventSources, [String: String]) {
-            return (description, events, variables.environmentVariables)
+            (description, events, variables.environmentVariables)
         }
 
         public static func buildBlock(
             _ variables: EnvironmentVariables,
             _ events: EventSources
         ) -> (String?, EventSources, [String: String]) {
-            return (nil, events, variables.environmentVariables)
+            (nil, events, variables.environmentVariables)
         }
 
         @available(*, unavailable, message: "Only one EnvironmentVariables block is allowed")
@@ -321,7 +320,7 @@ public struct Function: BuilderResource {
     public func ephemeralStorage(_ size: Int = 512) -> Function {
         var properties = properties()
         properties.ephemeralStorage = ServerlessFunctionProperties.EphemeralStorage(size)
-        return Function(name(), properties: properties)
+        return Function(self.name(), properties: properties)
     }
 
     private func getDestinations(onSuccess: Arn, onFailure: Arn)
@@ -395,7 +394,7 @@ public struct Function: BuilderResource {
             maximumEventAgeInSeconds: maximumEventAgeInSeconds,
             maximumRetryAttempts: maximumRetryAttempts
         )
-        return Function(name(), properties: properties)
+        return Function(self.name(), properties: properties)
     }
 
     // TODO: Add support for references to other resources (SNS, EventBridge)
@@ -425,7 +424,7 @@ public struct Function: BuilderResource {
             maximumEventAgeInSeconds: maximumEventAgeInSeconds,
             maximumRetryAttempts: maximumRetryAttempts
         )
-        return Function(name(), properties: properties)
+        return Function(self.name(), properties: properties)
     }
 
     public func fileSystem(_ arn: String, mountPoint: String) -> Function {
@@ -441,7 +440,7 @@ public struct Function: BuilderResource {
                 properties.fileSystemConfigs = [newConfig]
             }
         }
-        return Function(name(), properties: properties)
+        return Function(self.name(), properties: properties)
     }
 
     public func urlConfig(
@@ -500,12 +499,13 @@ public struct Function: BuilderResource {
         )
         var properties = properties()
         properties.functionUrlConfig = urlConfig
-        return Function(name(), properties: properties)
+        return Function(self.name(), properties: properties)
     }
 
     private func properties() -> ServerlessFunctionProperties {
-      self._underlying.properties as! ServerlessFunctionProperties  
+        self._underlying.properties as! ServerlessFunctionProperties
     }
+
     private func name() -> String { self._underlying.name }
 }
 
@@ -600,7 +600,7 @@ public struct EventSources {
         self.eventSources = builder()
     }
 
-    internal func samEventSources() -> [Resource<EventSourceType>] {
+    func samEventSources() -> [Resource<EventSourceType>] {
         self.eventSources
     }
 
@@ -644,7 +644,7 @@ public struct HttpApi {
         self.path = path
     }
 
-    internal func resource() -> Resource<EventSourceType> {
+    func resource() -> Resource<EventSourceType> {
         var properties: SAMResourceProperties?
         if self.method != nil || self.path != nil {
             properties = HttpApiProperties(method: self.method, path: self.path)
@@ -700,7 +700,7 @@ public struct Sqs {
         return Sqs(name: self.name, queue)
     }
 
-    internal func resource() -> Resource<EventSourceType> {
+    func resource() -> Resource<EventSourceType> {
         var properties: SQSEventProperties!
         if self.queue != nil {
             properties = SQSEventProperties(
@@ -730,7 +730,7 @@ public struct Sqs {
 // MARK: Environment Variable
 
 public struct EnvironmentVariables {
-    internal let environmentVariables: [String: String]
+    let environmentVariables: [String: String]
 
     // MARK: EnvironmentVariable DSL code
 
@@ -744,7 +744,7 @@ public struct EnvironmentVariables {
             // merge an array of dictionaries into a single dictionary.
             // existing values are preserved
             var mergedDictKeepCurrent: [String: String] = [:]
-            variables.forEach { dict in
+            for dict in variables {
                 mergedDictKeepCurrent = mergedDictKeepCurrent.merging(dict) { current, _ in current }
             }
             return mergedDictKeepCurrent
@@ -753,7 +753,8 @@ public struct EnvironmentVariables {
 }
 
 // MARK: Queue top level resource
-//TODO : do we really need two Queue and Sqs struct ?
+
+// TODO: do we really need two Queue and Sqs struct ?
 public struct Queue: BuilderResource {
     private let _underlying: Resource<ResourceType>
 
@@ -767,10 +768,11 @@ public struct Queue: BuilderResource {
         )
     }
 
-    public func resource() -> [Resource<ResourceType>] { [_underlying] }
+    public func resource() -> [Resource<ResourceType>] { [self._underlying] }
 }
 
 // MARK: Table top level resource
+
 public struct Table: BuilderResource {
     private let _underlying: Resource<ResourceType>
     private init(
@@ -801,7 +803,7 @@ public struct Table: BuilderResource {
         self.init(logicalName: logicalName, properties: properties)
     }
 
-    public func resource() -> [Resource<ResourceType>] { [ self._underlying ] }
+    public func resource() -> [Resource<ResourceType>] { [self._underlying] }
 
     public func provisionedThroughput(readCapacityUnits: Int, writeCapacityUnits: Int) -> Table {
         var properties = self._underlying.properties as! SimpleTableProperties // use as! is safe, it it fails, it is a programming error
@@ -819,7 +821,7 @@ public struct Table: BuilderResource {
 // MARK: Serialization code
 
 extension SAMDeploymentDescriptor {
-    internal func toJSON(pretty: Bool = true) -> String {
+    func toJSON(pretty: Bool = true) -> String {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.withoutEscapingSlashes]
         if pretty {
@@ -829,7 +831,7 @@ extension SAMDeploymentDescriptor {
         return String(decoding: jsonData, as: UTF8.self)
     }
 
-    internal func toYAML() -> String {
+    func toYAML() -> String {
         let encoder = YAMLEncoder()
         encoder.keyEncodingStrategy = .camelCase
         let yamlData = try! encoder.encode(self)

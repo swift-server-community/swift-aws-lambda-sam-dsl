@@ -10,13 +10,13 @@ let package = Package(
     products: [
         // SwiftPM plugin to deploy a SAM Lambda function
         .plugin(name: "AWSLambdaDeployer", targets: ["AWSLambdaDeployer"]),
-        
+
         .executable(name: "DeploymentDescriptorGeneratorExecutable",
-                        targets: ["DeploymentDescriptorGeneratorExecutable"]),
-        
+                    targets: ["DeploymentDescriptorGeneratorExecutable"]),
+
         // SwiftPM plugin to generate a SAM deployment descriptor
         .plugin(name: "AWSLambdaDescriptorGenerator", targets: ["AWSLambdaDescriptorGenerator"]),
-        
+
         // Shared Library to generate a SAM deployment descriptor
         .library(name: "AWSLambdaDeploymentDescriptor", type: .dynamic, targets: ["AWSLambdaDeploymentDescriptor"]),
     ],
@@ -35,7 +35,7 @@ let package = Package(
             dependencies: [
                 .byName(name: "AWSLambdaDeploymentDescriptorGenerator"),
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
-                .product(name: "Logging", package: "swift-log")
+                .product(name: "Logging", package: "swift-log"),
             ]
         ),
         .target(name: "AWSLambdaDeploymentDescriptorGenerator", dependencies: [
@@ -43,10 +43,9 @@ let package = Package(
             .product(name: "ArgumentParser", package: "swift-argument-parser"),
             .product(name: "HummingbirdMustache", package: "hummingbird-mustache"),
         ],
-                resources: [
-                    .process("Resources/SamTranslatorSchema.json")
-                ]
-        ),
+        resources: [
+            .process("Resources/SamTranslatorSchema.json"),
+        ]),
         .plugin(
             name: "AWSLambdaDeployer",
             capability: .command(
@@ -57,7 +56,7 @@ let package = Package(
 //                permissions: [.writeToPackageDirectory(reason: "This plugin generates a SAM template to describe your deployment")]
             )
         ),
-        
+
         .plugin(
             name: "AWSLambdaDescriptorGenerator",
             capability: .buildTool(),
@@ -77,7 +76,8 @@ let package = Package(
             // https://stackoverflow.com/questions/47177036/use-resources-in-unit-tests-with-swift-package-manager
             resources: [
                 .copy("Resources/SimpleJSONSchema.json"),
-                .copy("Resources/SAMJSONSchema.json")]
+                .copy("Resources/SAMJSONSchema.json"),
+            ]
         ),
     ]
 )

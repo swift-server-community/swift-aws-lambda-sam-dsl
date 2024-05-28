@@ -12,15 +12,12 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import XCTest
-import CryptoKit
 @testable import AWSLambdaDeploymentDescriptor
+import CryptoKit
+import XCTest
 
 final class FileDigestTests: XCTestCase {
-
-
     func testFileDigest() throws {
-        
         let expected = "4a5d82d7a7a76a1487fb12ae7f1c803208b6b5e1cfb9ae14afdc0916301e3415"
         let tempDir = FileManager.default.temporaryDirectory.path
         let tempFile = "\(tempDir)/temp.txt"
@@ -29,12 +26,11 @@ final class FileDigestTests: XCTestCase {
         defer {
             try? FileManager.default.removeItem(atPath: tempFile)
         }
-        
+
         if let result = FileDigest.hex(from: tempFile) {
             XCTAssertEqual(result, expected)
         } else {
             XCTFail("digest is nil")
         }
     }
-
 }
