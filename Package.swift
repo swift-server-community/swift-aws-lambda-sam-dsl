@@ -27,12 +27,20 @@ let package = Package(
         ),
 
         // SAM Deployment Descriptor Generator
-        .executableTarget(
+        .target(
             name: "AWSLambdaDeploymentDescriptorGenerator",
+            path: "Sources/AWSLambdaDeploymentDescriptorGenerator",
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
+        ),
+
+        // a test command line that uses Mustache as template library
+        .executableTarget(
+            name: "AWSLambdaDeploymentDescriptorGeneratorMustache",
             dependencies: [
+                .target(name: "AWSLambdaDeploymentDescriptorGenerator"),
                 .product(name: "Mustache", package: "swift-mustache")
             ],
-            path: "Sources/AWSLambdaDeploymentDescriptorGenerator",
+            path: "Sources/AWSLambdaDeploymentDescriptorGeneratorMustache",
             exclude: ["Resources"],
             swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]      
         ),

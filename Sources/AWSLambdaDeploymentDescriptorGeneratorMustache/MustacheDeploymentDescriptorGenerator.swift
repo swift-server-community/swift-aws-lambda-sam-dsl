@@ -1,4 +1,5 @@
 import Foundation
+import AWSLambdaDeploymentDescriptorGenerator
 import Mustache
 
 //TODO: add Command Line Args parser
@@ -16,7 +17,7 @@ struct DeploymentDescriptorGenerator {
 
         //TODO: it should be possible to override with command line args
         print("📖 Reading SAM JSON Schema")
-        let jsonSchemaPath = "Sources/AWSLambdaDeploymentDescriptorGenerator/Resources/SAMJSONSchema.json" 
+        let jsonSchemaPath = "Sources/AWSLambdaDeploymentDescriptorGeneratorMustache/Resources/SAMJSONSchema.json" 
         guard fm.fileExists(atPath: jsonSchemaPath) else {
             throw GeneratorError.fileNotFound(jsonSchemaPath)
         }
@@ -24,7 +25,7 @@ struct DeploymentDescriptorGenerator {
         print("👉 \(jsonSchemaPath)")
 
         print("📖 Reading templates directory")
-        let templatesPath = "Sources/AWSLambdaDeploymentDescriptorGenerator/Resources/templates" 
+        let templatesPath = "Sources/AWSLambdaDeploymentDescriptorGeneratorMustache/Resources/templates" 
         var isDir = ObjCBool(true)
         guard fm.fileExists(atPath: templatesPath, isDirectory: &isDir) else {
             throw GeneratorError.fileNotFound(templatesPath)
@@ -45,7 +46,7 @@ struct DeploymentDescriptorGenerator {
         
         // 1. generate definitions
         print("📝 Generate definitions")
-        if let definitions = schema.definitions  {
+        if let _ = schema.definitions  {
                         
             if let output = library.render(schema, withTemplate: "definitions") {
                 print(output)
