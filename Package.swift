@@ -16,6 +16,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/hummingbird-project/swift-mustache", branch: "main"),
+        .package(url: "https://github.com/apple/swift-syntax.git",  branch: "main"),
     ],
     targets: [
 
@@ -44,6 +45,21 @@ let package = Package(
             exclude: ["Resources"],
             swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]      
         ),
+
+        // a test command line that uses Swift Syntax code generation
+        .executableTarget(
+            name: "AWSLambdaDeploymentDescriptorGeneratorSwiftSyntax",
+            dependencies: [
+                .target(name: "AWSLambdaDeploymentDescriptorGenerator"),
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxBuilder", package: "swift-syntax")
+            ],
+            path: "Sources/AWSLambdaDeploymentDescriptorGeneratorSwiftSyntax",
+            exclude: ["Resources"],
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]      
+        ),
+
+        // the plugin to generate a SAM deployment descriptor
         .plugin(
             name: "AWSLambdaDeployer",
             capability: .command(
@@ -54,12 +70,16 @@ let package = Package(
 //                permissions: [.writeToPackageDirectory(reason: "This plugin generates a SAM template to describe your deployment")]
             )
         ),
+
+        // test the deployment decsriptor
         .testTarget(
             name: "AWSLambdaDeploymentDescriptorTests",
             dependencies: [
                 .byName(name: "AWSLambdaDeploymentDescriptor"),
             ]
         ),
+
+        // test the SAM JSON Schema reader
         .testTarget(
             name: "AWSLambdaDeploymentDescriptorGeneratorTests",
             dependencies: [
