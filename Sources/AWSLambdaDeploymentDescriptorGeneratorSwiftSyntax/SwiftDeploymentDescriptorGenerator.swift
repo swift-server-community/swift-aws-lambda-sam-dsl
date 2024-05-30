@@ -9,8 +9,6 @@ struct DeploymentDescriptorGenerator {
     // TODO: this will become run when we include command line args library
     static func main() async throws {
         let fm = FileManager.default
-        //        let currentDir = fm.currentDirectoryPath
-        //        print("👉 \(currentDir)")
         
         let ddg = DeploymentDescriptorGenerator()
         
@@ -33,11 +31,17 @@ struct DeploymentDescriptorGenerator {
     }
     
     func generate(from schema: JSONSchema) async throws {
+        let defaultInheritance = InheritanceClauseSyntax {
+            InheritedTypeSyntax(type: TypeSyntax("Codable"))
+            InheritedTypeSyntax(type: TypeSyntax("Sendable"))
+        }
+        
         let source = SourceFileSyntax {
-            StructDeclSyntax(name: "JSONSchema") {
+            //TODO: is there a result builder for DeclModifierSyntax?
+            StructDeclSyntax(modifiers:  DeclModifierListSyntax { DeclModifierSyntax(name: .keyword(.public)) },
+                             name: "JSONSchema",
+                             inheritanceClause: defaultInheritance) {
 
-                // TODO: how to add protocol conformance (Codable, Sendable) 
-                
                 for (name, value) in schema.properties ?? [:] {
                     if case .type(let t) = value  {
                         DeclSyntax("public let \(raw: name.withFirstLetterLowercased()): \(raw: t.swiftType())")
@@ -55,28 +59,9 @@ struct DeploymentDescriptorGenerator {
             }
         }
         
+        //TODO: save this to a file instead
         print(source.formatted().description)
     }
-    
-    // func generateDecodableStruct(for schema: TypeSchema) throws -> SourceFileSyntax {
-    //     SourceFileSyntax {
-    //         StructDeclSyntax(name: "\(raw: schema.typeName)") {
-    //             for prop in schema.properties {
-    //                 DeclSyntax("let \(raw: prop.name): \(raw: prop.type)")
-    
-    //                 DeclSyntax(
-    //                     """
-    //                     func with\(raw: prop.name.withFirstLetterUppercased())(_ \(raw: prop.name): \(raw: prop.type)) -> \(raw: schema.typeName) {
-    //                       var result = self
-    //                       result.\(raw: prop.name) = \(raw: prop.name)
-    //                       return result
-    //                     }
-    //                     """
-    //                 )
-    //             }
-    //         }
-    //       }
-    //   }
 }
 
 
