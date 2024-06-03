@@ -45,6 +45,7 @@ let package = Package(
         ],
         resources: [
             .process("Resources/SamTranslatorSchema.json"),
+            .process("Resources/TypeSchemaTranslator.json"),
         ]),
         .plugin(
             name: "AWSLambdaDeployer",
@@ -77,6 +78,7 @@ let package = Package(
             resources: [
                 .copy("Resources/SimpleJSONSchema.json"),
                 .copy("Resources/SAMJSONSchema.json"),
+                .copy("Resources/TypeSchemaTranslator.json"),
             ]
         ),
     ]

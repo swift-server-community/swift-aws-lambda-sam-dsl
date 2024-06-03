@@ -1,0 +1,15 @@
+{
+  "typeName": "testTypeName",  
+  "properties": [
+    {
+      "name": "propertyName1",
+      "type": "propertyType1"
+    },
+    {
+      "name": "propertyName2",
+      "type": "propertyType2"
+    }
+  ],
+  "subTypes": []
+}
+

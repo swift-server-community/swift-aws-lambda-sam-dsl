@@ -46,6 +46,6 @@ struct Command: AsyncParsableCommand, DeploymentDescriptorGeneratorCommand {
     static var defaultEndpoints: String { "\(rootPath)/awsLambda/json" }
 
     func run() async throws {
-        try await DeploymentDescriptorGenerator(command: self).generate()
+//        try await DeploymentDescriptorGenerator().generate()
     }
 }

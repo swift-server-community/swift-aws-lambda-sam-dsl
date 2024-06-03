@@ -28,18 +28,6 @@ public struct DeploymentDescriptorGenerator {
         let error: Error
     }
 
-    let command: DeploymentDescriptorGeneratorCommand
-//    let library: HBMustacheLibrary
-    let logger: Logging.Logger
-
-    public init(command: DeploymentDescriptorGeneratorCommand) throws {
-        self.command = command
-//        self.library = try Templates.createLibrary()
-        var logger = Logging.Logger(label: "DeploymentDescriptorGenerator")
-        logger.logLevel = self.command.logLevel.map { Logging.Logger.Level(rawValue: $0) ?? .info } ?? .info
-        self.logger = logger
-    }
-
     public func generate() {
         // generate code here
 
@@ -49,8 +37,8 @@ public struct DeploymentDescriptorGenerator {
         do {
             let schemaData = try Data(contentsOf: url)
             do {
-                _ = try analyzeSAMSchema(from: schemaData)
-                // You can now access and analyze the schema information stored in the `schema` struct
+                _ = try self.analyzeSAMSchema(from: schemaData)
+                // access the schema information
             } catch {
                 print("Error analyzing schema: \(error)")
             }
@@ -59,6 +47,61 @@ public struct DeploymentDescriptorGenerator {
             print("Error getting schemaData contents of URL: \(error)")
         }
     }
+
+    public func generateWithSwiftMustache() {
+        do {
+            let library = try Templates.createLibrary()
+            let template = library.getTemplate(named: "structTemplate")
+
+            let schema = TypeSchema(typeName: "Hello", properties: [.init(name: "one", type: "string")], subTypes: [])
+            let modelContext = [
+                "scope": "public",
+                "object": "struct",
+                "name": schema.typeName,
+                "shapeProtocol": "Codable",
+                "properties": schema.properties.map { property in
+                    [
+                        "comment": "Fill in comment logic here",
+                        "propertyWrapper": nil,
+                        // "propertyWrapper": nil as String?,
+                        "variable": property.name,
+                        "type": property.type,
+                        "isOptional": false,
+                        // "isOptional": property.type.contains("?"),
+                        "default": nil,
+                        "last": false,
+                        "required": true,
+                        "isPrimitive": true,
+                        "isCodable": true,
+                        "codableType": property.type,
+                    ]
+                },
+            ] as [String: Any]
+
+            if let template = template {
+                let renderedStruct = template.render(modelContext)
+                print(renderedStruct)
+            } else {
+                print("Error: Template 'structTemplate' not found")
+            }
+
+        } catch {
+            print("Error generating Swift struct: \(error)")
+        }
+    }
+
+    /*
+      let renderedStruct = """
+      "public struct Hello: Codable {\n        @nil\n  public var Optional(\"one\"): Optional(\"string\")\n\n  public init(Optional(\"one\"): Optional(\"string\") = nil, ) {\n    self.Optional(\"one\") = Optional(\"one\")\n}\n\n\n  private enum CodingKeys: String, CodingKey {\n    case Optional(\"one\") = \"Hello\"\n  }\n}"
+      """
+     ------------------------
+      let expectedOutput = """
+      public struct Hello: Codable {
+          // Fill in comment logic here
+          var one: String
+      }
+      """
+      */
 
     func analyzeSAMSchema(from jsonData: Data) throws -> JSONSchema {
         let decoder = JSONDecoder()
@@ -71,33 +114,18 @@ public struct DeploymentDescriptorGenerator {
         if let properties = schema.properties {
             print("\n  Properties:")
             for (name, propertyType) in properties {
-                print("    - \(name): \(propertyType)") // Briefly describe the type
+                print("    - \(name): \(propertyType)")
             }
         }
 
         if let definitions = schema.definitions {
             print("\n  Definitions:")
             for (name, definitionType) in definitions {
-                print("    - \(name): \(definitionType)") // Briefly describe the type
+                print("    - \(name): \(definitionType)")
             }
         }
 
         return schema
-    }
-
-    func getModelFiles() -> [String] {
-        if let input = self.command.inputFile {
-            return [input]
-        } else if (self.command.inputFolder) != nil {
-            if (command.module) != nil {
-                return []
-//                return Glob.entries(pattern: "\(inputFolder)/\(module)*.json")
-            }
-            return []
-//            return Glob.entries(pattern: "\(inputFolder)/*.json")
-        } else {
-            return []
-        }
     }
 }
 
@@ -117,5 +145,53 @@ extension String {
         }
         try write(toFile: toFile, atomically: true, encoding: .utf8)
         return true
+    }
+}
+
+public class HBMustacheTemplateAdapter: TemplateRendering {
+    private let template: HBMustacheTemplate
+
+    public init(string: String) throws {
+        self.template = try HBMustacheTemplate(string: string)
+    }
+
+    public func render(_ object: Any?) -> String {
+        self.template.render(object)
+    }
+}
+
+class MockTemplate: TemplateRendering {
+    private let templateString: String
+
+    init(string: String) {
+        self.templateString = string
+    }
+
+    func render(_: Any?) -> String {
+        self.templateString
+    }
+}
+
+class MockTemplateLibrary: TemplateLibrary {
+    private var templates: [String: MockTemplate] = [:]
+
+    func register(_ template: MockTemplate, named name: String) {
+        self.templates[name] = template
+    }
+
+    func getTemplate(named name: String) -> TemplateRendering? {
+        self.templates[name]
+    }
+}
+
+public class HBMustacheLibraryAdapter: TemplateLibrary {
+    private var templates: [String: HBMustacheTemplateAdapter] = [:]
+
+    public func register(_ template: HBMustacheTemplateAdapter, named name: String) {
+        self.templates[name] = template
+    }
+
+    public func getTemplate(named name: String) -> TemplateRendering? {
+        self.templates[name]
     }
 }

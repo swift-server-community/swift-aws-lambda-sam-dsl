@@ -29,20 +29,6 @@
           "description": "Do I like this vegetable?"
         }
       }
-    },
-    "DependsOn": {
-      "anyOf": [
-        {
-          "pattern": "^[a-zA-Z0-9]+$",
-          "type": "string"
-        },
-        {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        }
-      ]
-    },
+    }
   }
 }
