@@ -24,6 +24,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.0.0"),
         .package(url: "https://github.com/apple/swift-log.git", .upToNextMajor(from: "1.4.2")),
         .package(url: "https://github.com/hummingbird-project/hummingbird-mustache.git", from: "1.0.3"),
+        .package(url: "https://github.com/apple/swift-syntax.git", from: "510.0.2"),
     ],
     targets: [
         .target(
@@ -42,6 +43,8 @@ let package = Package(
             .product(name: "Logging", package: "swift-log"),
             .product(name: "ArgumentParser", package: "swift-argument-parser"),
             .product(name: "HummingbirdMustache", package: "hummingbird-mustache"),
+            .product(name: "SwiftSyntax", package: "swift-syntax"),
+            .product(name: "SwiftSyntaxBuilder", package: "swift-syntax")
         ],
         resources: [
             .process("Resources/SamTranslatorSchema.json"),

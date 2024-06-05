@@ -1,54 +1,46 @@
 extension Templates {
     static let structTemplate = #"""
     {{%CONTENT_TYPE:TEXT}}
-    {{! Template for a decodable struct }}
     {{scope}} {{object}} {{name}}: {{shapeProtocol}} {
     {{#properties}}
-      {{#comment}}
-        {{>comment}}
-      {{/comment}}
-      {{#propertyWrapper}}
-        @{{.}}
-      {{/propertyWrapper}}
-      {{scope}} {{#propertyWrapper}}var{{/propertyWrapper}}{{^propertyWrapper}}let{{/propertyWrapper}} {{variable}}: {{type}}{{#isOptional}}?{{/isOptional}}
+      {{scope}} let {{variable}}: {{type}}
     {{/properties}}
-
-      {{! init() function }}
-      {{scope}} init({{#properties}}{{variable}}: {{type}}{{#default}} = {{.}}{{/default}}{{^last}}, {{/last}}{{/properties}}) {
+    
+    {{#subTypes}}
+      {{scope}} let subTypes: [{{name}}]
+    {{/subTypes}}
+    
+      {{scope}} init({{#properties}}{{variable}}: {{type}}{{^last}}, {{/last}}{{/properties}}{{#subTypes}}, subTypes: [{{name}}]{{/subTypes}}) {
       {{#properties}}
         self.{{variable}} = {{variable}}
       {{/properties}}
+      {{#subTypes}}
+        self.subTypes = subTypes
+      {{/subTypes}}
     }
-
-      {{! Decoding logic (replace existing logic) }}
-      {{#shapeCoding.requiresDecodeInit}}
-        {{scope}} init(from decoder: Decoder) throws {
-          let container = try decoder.container(keyedBy: CodingKeys.self)
-          {{#properties}}
-            {{#isCodable}}
-              self.{{variable}} = try container.decode{{^required}}IfPresent{{/required}}({{codableType}}.self, forKey: .{{variable}}){{#propertyWrapper}}.wrappedValue{{/propertyWrapper}}
-            {{/isCodable}}
-            {{#isPrimitive}} // Handle primitive types directly (e.g., Int, String)
-              self.{{variable}} = try container.decode({{type}}.self, forKey: .{{variable}})
-            {{/isPrimitive}}
-            {{^isCodable}}
-            {{^isPrimitive}} // Handle non-codable types (e.g., custom structs)
-              // Logic for handling custom types (might involve a separate decoder)
-            {{/isPrimitive}}
-            {{/isCodable}}
-          {{/properties}}
-        }
-      {{/shapeCoding.requiresDecodeInit}}
-
-      {{! CodingKeys enum }}
-      {{#properties}}
-      private enum CodingKeys: String, CodingKey {
-        case {{variable}} = "{{name}}"
+    
+      {{scope}} init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        {{#properties}}
+          self.{{variable}} = try container.decode({{type}}.self, forKey: .{{variable}})
+        {{/properties}}
+        {{#subTypes}}
+          self.subTypes = try container.decode([{{name}}].self, forKey: .subTypes)
+        {{/subTypes}}
       }
-      {{/properties}}
-      {{^properties}}
-        private enum CodingKeys: CodingKey {}
-      {{/properties}}
+    
+      private enum CodingKeys: String, CodingKey {
+        {{#properties}}
+        case {{variable}}
+        {{/properties}}
+        {{#subTypes}}
+        case subTypes
+        {{/subTypes}}
+      }
     }
+    
+    {{#subTypes}}
+    {{>structTemplate}}
+    {{/subTypes}}
     """#
 }

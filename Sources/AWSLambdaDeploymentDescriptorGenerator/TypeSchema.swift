@@ -7,7 +7,7 @@ public protocol TemplateLibrary {
     func getTemplate(named name: String) -> TemplateRendering?
 }
 
-struct TypeSchema: Decodable {
+struct TypeSchema: Decodable, Equatable {
     let typeName: String
     let properties: [Property]
     let subTypes: [TypeSchema]
@@ -18,7 +18,7 @@ struct TypeSchema: Decodable {
         self.subTypes = subTypes
     }
 
-    struct Property: Decodable {
+    struct Property: Decodable, Equatable {
         let name: String
         let type: String
 

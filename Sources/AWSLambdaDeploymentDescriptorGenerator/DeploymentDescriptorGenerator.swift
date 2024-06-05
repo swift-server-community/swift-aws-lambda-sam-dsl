@@ -9,6 +9,8 @@
 import Foundation
 import HummingbirdMustache
 import Logging
+import SwiftSyntax
+import SwiftSyntaxBuilder
 
 public protocol DeploymentDescriptorGeneratorCommand {
     var inputFile: String? { get }
@@ -47,14 +49,78 @@ public struct DeploymentDescriptorGenerator {
             print("Error getting schemaData contents of URL: \(error)")
         }
     }
+    
+    //MARK: - generateWithSwiftOpenapi
+    public func generateWithSwiftOpenAPI() {
+        
+    }
+    
+    
+    //MARK: - generateWithSwiftSyntax
+    
+    func generateWithSwiftSyntax(for schema: TypeSchema) throws -> StructDeclSyntax {
+        try StructDeclSyntax("public struct \(raw: schema.typeName)Request: Decodable") {
+            for property in schema.properties {
+                "public let \(raw: property.name): \(raw: property.type)"
+            }
+            for subType in schema.subTypes {
+                try generateWithSwiftSyntax(for: subType)
+            }
+        }
+    }
+    
+//    static func main() {
+//      let properties = [
+//        "firstName": "String",
+//        "lastName": "String",
+//        "age": "Int",
+//      ]
+//
+//      let source = SourceFileSyntax {
+//        StructDeclSyntax(name: "Person") {
+//          for (propertyName, propertyType) in properties {
+//            DeclSyntax("var \(raw: propertyName): \(raw: propertyType)")
+//
+//            DeclSyntax(
+//              """
+//              func with\(raw: propertyName.withFirstLetterUppercased())(_ \(raw: propertyName): \(raw: propertyType)) -> Person {
+//                var result = self
+//                result.\(raw: propertyName) = \(raw: propertyName)
+//                return result
+//              }
+//              """
+//            )
+//          }
+//        }
+//      }
+//
+//      print(source.formatted().description)
+//    }
+    
 
+    //MARK: - generateWithSwiftMustache
     public func generateWithSwiftMustache() {
         do {
             let library = try Templates.createLibrary()
             let template = library.getTemplate(named: "structTemplate")
-
-            let schema = TypeSchema(typeName: "Hello", properties: [.init(name: "one", type: "string")], subTypes: [])
-            let modelContext = [
+                        
+            let properties: [TypeSchema.Property] = [
+                .init(name: "id", type: "Int"),
+                .init(name: "name", type: "String")
+            ]
+            
+            let subTypeProperties: [TypeSchema.Property] = [
+                .init(name: "subId", type: "Int"),
+                .init(name: "subName", type: "String")
+            ]
+            
+            let subTypeSchema = TypeSchema(typeName: "SubType", properties: subTypeProperties, subTypes: [])
+            
+            let schema = TypeSchema(typeName: "Hello",
+                                    properties: properties,
+                                    subTypes: [subTypeSchema])
+            
+            let modelContext: [String: Any] = [
                 "scope": "public",
                 "object": "struct",
                 "name": schema.typeName,
@@ -63,28 +129,48 @@ public struct DeploymentDescriptorGenerator {
                     [
                         "comment": "Fill in comment logic here",
                         "propertyWrapper": nil,
-                        // "propertyWrapper": nil as String?,
                         "variable": property.name,
                         "type": property.type,
-                        "isOptional": false,
-                        // "isOptional": property.type.contains("?"),
-                        "default": nil,
-                        "last": false,
+                        "isOptional": property.type.contains("?"),
+                        "default": false,
+                        "last": property == schema.properties.last,
                         "required": true,
                         "isPrimitive": true,
                         "isCodable": true,
                         "codableType": property.type,
                     ]
                 },
-            ] as [String: Any]
-
+                "subTypes": schema.subTypes.map { subType in
+                    [
+                        "object": "struct",
+                        "name": subType.typeName,
+                        "shapeProtocol": "Codable",
+                        "properties": subType.properties.map { property in
+                            [
+                                "comment": "Fill in comment logic here",
+                                "propertyWrapper": nil,
+                                "variable": property.name,
+                                "type": property.type,
+                                "isOptional": property.type.contains("?"),
+                                "default": false,
+                                "last": property == subType.properties.last,
+                                "required": true,
+                                "isPrimitive": true,
+                                "isCodable": true,
+                                "codableType": property.type,
+                            ]
+                        },
+                    ]
+                },
+            ] as [String : Any]
+            
             if let template = template {
                 let renderedStruct = template.render(modelContext)
                 print(renderedStruct)
             } else {
                 print("Error: Template 'structTemplate' not found")
             }
-
+            
         } catch {
             print("Error generating Swift struct: \(error)")
         }
