@@ -49,26 +49,24 @@ public struct DeploymentDescriptorGenerator {
             print("Error getting schemaData contents of URL: \(error)")
         }
     }
-    
-    //MARK: - generateWithSwiftOpenapi
-    public func generateWithSwiftOpenAPI() {
-        
-    }
-    
-    
-    //MARK: - generateWithSwiftSyntax
-    
+
+    // MARK: - generateWithSwiftOpenapi
+
+    public func generateWithSwiftOpenAPI() {}
+
+    // MARK: - generateWithSwiftSyntax
+
     func generateWithSwiftSyntax(for schema: TypeSchema) throws -> StructDeclSyntax {
         try StructDeclSyntax("public struct \(raw: schema.typeName)Request: Decodable") {
             for property in schema.properties {
                 "public let \(raw: property.name): \(raw: property.type)"
             }
             for subType in schema.subTypes {
-                try generateWithSwiftSyntax(for: subType)
+                try self.generateWithSwiftSyntax(for: subType)
             }
         }
     }
-    
+
 //    static func main() {
 //      let properties = [
 //        "firstName": "String",
@@ -96,30 +94,30 @@ public struct DeploymentDescriptorGenerator {
 //
 //      print(source.formatted().description)
 //    }
-    
 
-    //MARK: - generateWithSwiftMustache
+    // MARK: - generateWithSwiftMustache
+
     public func generateWithSwiftMustache() {
         do {
             let library = try Templates.createLibrary()
             let template = library.getTemplate(named: "structTemplate")
-                        
+
             let properties: [TypeSchema.Property] = [
                 .init(name: "id", type: "Int"),
-                .init(name: "name", type: "String")
+                .init(name: "name", type: "String"),
             ]
-            
+
             let subTypeProperties: [TypeSchema.Property] = [
                 .init(name: "subId", type: "Int"),
-                .init(name: "subName", type: "String")
+                .init(name: "subName", type: "String"),
             ]
-            
+
             let subTypeSchema = TypeSchema(typeName: "SubType", properties: subTypeProperties, subTypes: [])
-            
+
             let schema = TypeSchema(typeName: "Hello",
                                     properties: properties,
                                     subTypes: [subTypeSchema])
-            
+
             let modelContext: [String: Any] = [
                 "scope": "public",
                 "object": "struct",
@@ -162,32 +160,25 @@ public struct DeploymentDescriptorGenerator {
                         },
                     ]
                 },
-            ] as [String : Any]
-            
+            ] as [String: Any]
+
             if let template = template {
                 let renderedStruct = template.render(modelContext)
                 print(renderedStruct)
             } else {
                 print("Error: Template 'structTemplate' not found")
             }
-            
+
         } catch {
             print("Error generating Swift struct: \(error)")
         }
     }
 
     /*
-      let renderedStruct = """
-      "public struct Hello: Codable {\n        @nil\n  public var Optional(\"one\"): Optional(\"string\")\n\n  public init(Optional(\"one\"): Optional(\"string\") = nil, ) {\n    self.Optional(\"one\") = Optional(\"one\")\n}\n\n\n  private enum CodingKeys: String, CodingKey {\n    case Optional(\"one\") = \"Hello\"\n  }\n}"
-      """
-     ------------------------
-      let expectedOutput = """
-      public struct Hello: Codable {
-          // Fill in comment logic here
-          var one: String
-      }
-      """
-      */
+     let renderedStruct = """
+     "public struct Hello: Codable {\n  public let Optional(\"id\"): Optional(\"Int\")\n  public let Optional(\"name\"): Optional(\"String\")\n\n  public let subTypes: [SubType]\n\n  public init(Optional(\"id\"): Optional(\"Int\"), Optional(\"name\"): Optional(\"String\"), subTypes: [SubType]) {\n    self.Optional(\"id\") = Optional(\"id\")\n    self.Optional(\"name\") = Optional(\"name\")\n    self.subTypes = subTypes\n}\n\n  public init(from decoder: Decoder) throws {\n    let container = try decoder.container(keyedBy: CodingKeys.self)\n      self.Optional(\"id\") = try container.decode(Optional(\"Int\").self, forKey: .Optional(\"id\"))\n      self.Optional(\"name\") = try container.decode(Optional(\"String\").self, forKey: .Optional(\"name\"))\n      self.subTypes = try container.decode([SubType].self, forKey: .subTypes)\n  }\n\n  private enum CodingKeys: String, CodingKey {\n    case Optional(\"id\")\n    case Optional(\"name\")\n    case subTypes\n  }\n}\n\n"
+     """
+     */
 
     func analyzeSAMSchema(from jsonData: Data) throws -> JSONSchema {
         let decoder = JSONDecoder()

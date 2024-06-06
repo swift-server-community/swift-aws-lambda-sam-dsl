@@ -44,7 +44,7 @@ let package = Package(
             .product(name: "ArgumentParser", package: "swift-argument-parser"),
             .product(name: "HummingbirdMustache", package: "hummingbird-mustache"),
             .product(name: "SwiftSyntax", package: "swift-syntax"),
-            .product(name: "SwiftSyntaxBuilder", package: "swift-syntax")
+            .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
         ],
         resources: [
             .process("Resources/SamTranslatorSchema.json"),
