@@ -5,12 +5,11 @@ extension Templates {
     {{#properties}}
       {{scope}} let {{variable}}: {{type}}
     {{/properties}}
-
     {{#subTypes}}
       {{scope}} let subTypes: [{{name}}]
     {{/subTypes}}
-
-      {{scope}} init({{#properties}}{{variable}}: {{type}}{{^last}}, {{/last}}{{/properties}}{{#subTypes}}, subTypes: [{{name}}]{{/subTypes}}) {
+       
+    {{scope}} init({{#properties}}{{variable}}: {{type}}{{#isOptional}}?{{/isOptional}}{{^last}}, {{/last}}{{/properties}}{{#subTypes}}, subTypes: [{{name}}]{{/subTypes}}) {
       {{#properties}}
         self.{{variable}} = {{variable}}
       {{/properties}}
@@ -18,17 +17,16 @@ extension Templates {
         self.subTypes = subTypes
       {{/subTypes}}
     }
-
+          
       {{scope}} init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         {{#properties}}
-          self.{{variable}} = try container.decode({{type}}.self, forKey: .{{variable}})
+          self.{{variable}} = try container.decode{{^isOptional}}({{type}}.self, forKey: .{{variable}}){{/isOptional}}{{#isOptional}}IfPresent({{type}}.self, forKey: .{{variable}}){{/isOptional}}
         {{/properties}}
         {{#subTypes}}
           self.subTypes = try container.decode([{{name}}].self, forKey: .subTypes)
         {{/subTypes}}
       }
-
       private enum CodingKeys: String, CodingKey {
         {{#properties}}
         case {{variable}}
@@ -38,7 +36,6 @@ extension Templates {
         {{/subTypes}}
       }
     }
-
     {{#subTypes}}
     {{>structTemplate}}
     {{/subTypes}}

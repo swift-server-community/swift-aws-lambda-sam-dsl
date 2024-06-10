@@ -11,6 +11,7 @@ import HummingbirdMustache
 import Logging
 import SwiftSyntax
 import SwiftSyntaxBuilder
+import Cocoa
 
 public protocol DeploymentDescriptorGeneratorCommand {
     var inputFile: String? { get }
@@ -29,7 +30,15 @@ public struct DeploymentDescriptorGenerator {
         let filename: String
         let error: Error
     }
-
+    
+    static var rootPath: String {
+        return #file
+            .split(separator: "/", omittingEmptySubsequences: false)
+            .dropLast(3)
+            .map { String(describing: $0) }
+            .joined(separator: "/")
+    }
+    
     public func generate() {
         // generate code here
 
@@ -98,26 +107,28 @@ public struct DeploymentDescriptorGenerator {
     // MARK: - generateWithSwiftMustache
 
     public func generateWithSwiftMustache() {
+        
         do {
             let library = try Templates.createLibrary()
             let template = library.getTemplate(named: "structTemplate")
-
+            
+            //TODO: Decode JSON here
             let properties: [TypeSchema.Property] = [
                 .init(name: "id", type: "Int"),
                 .init(name: "name", type: "String"),
             ]
-
+            
             let subTypeProperties: [TypeSchema.Property] = [
                 .init(name: "subId", type: "Int"),
                 .init(name: "subName", type: "String"),
             ]
-
+            
             let subTypeSchema = TypeSchema(typeName: "SubType", properties: subTypeProperties, subTypes: [])
-
+            
             let schema = TypeSchema(typeName: "Hello",
                                     properties: properties,
                                     subTypes: [subTypeSchema])
-
+            
             let modelContext: [String: Any] = [
                 "scope": "public",
                 "object": "struct",
@@ -125,8 +136,9 @@ public struct DeploymentDescriptorGenerator {
                 "shapeProtocol": "Codable",
                 "properties": schema.properties.map { property in
                     [
+                        "scope": "",
                         "comment": "Fill in comment logic here",
-                        "propertyWrapper": nil,
+                        //                        "propertyWrapper": nil,
                         "variable": property.name,
                         "type": property.type,
                         "isOptional": property.type.contains("?"),
@@ -140,13 +152,14 @@ public struct DeploymentDescriptorGenerator {
                 },
                 "subTypes": schema.subTypes.map { subType in
                     [
+                        "scope": "",
                         "object": "struct",
-                        "name": subType.typeName,
+                        "name": subTypeSchema.typeName,
                         "shapeProtocol": "Codable",
-                        "properties": subType.properties.map { property in
+                        "properties": subTypeSchema.properties.map { property in
                             [
                                 "comment": "Fill in comment logic here",
-                                "propertyWrapper": nil,
+                                //                                "propertyWrapper": nil,
                                 "variable": property.name,
                                 "type": property.type,
                                 "isOptional": property.type.contains("?"),
@@ -161,25 +174,44 @@ public struct DeploymentDescriptorGenerator {
                     ]
                 },
             ] as [String: Any]
-
+            
+            
             if let template = template {
                 let renderedStruct = template.render(modelContext)
                 print(renderedStruct)
+                let projectDirectory =  "\(DeploymentDescriptorGenerator.rootPath)"
+                let filePath = projectDirectory + "/Sources/AWSLambdaDeploymentDescriptorGenerator/dummyGenerated.swift"
+                
+                let directoryPath = (filePath as NSString).deletingLastPathComponent
+                var isDirectory: ObjCBool = false
+                if !FileManager.default.fileExists(atPath: directoryPath, isDirectory: &isDirectory) {
+                    print("Error: Directory does not exist.")
+                    return
+                }
+                
+                let writable = FileManager.default.isWritableFile(atPath: directoryPath)
+                if !writable {
+                    print("Error: No write permissions for the directory.")
+                    return
+                }
+                
+                do {
+                    if try renderedStruct.writeIfChanged(toFile: filePath) {
+                        print("Success Wrote ✅")
+                    }
+                } catch {
+                    print("Error writing file: \(error)")
+                }
             } else {
                 print("Error: Template 'structTemplate' not found")
             }
-
         } catch {
             print("Error generating Swift struct: \(error)")
         }
     }
 
-    /*
-     let renderedStruct = """
-     "public struct Hello: Codable {\n  public let Optional(\"id\"): Optional(\"Int\")\n  public let Optional(\"name\"): Optional(\"String\")\n\n  public let subTypes: [SubType]\n\n  public init(Optional(\"id\"): Optional(\"Int\"), Optional(\"name\"): Optional(\"String\"), subTypes: [SubType]) {\n    self.Optional(\"id\") = Optional(\"id\")\n    self.Optional(\"name\") = Optional(\"name\")\n    self.subTypes = subTypes\n}\n\n  public init(from decoder: Decoder) throws {\n    let container = try decoder.container(keyedBy: CodingKeys.self)\n      self.Optional(\"id\") = try container.decode(Optional(\"Int\").self, forKey: .Optional(\"id\"))\n      self.Optional(\"name\") = try container.decode(Optional(\"String\").self, forKey: .Optional(\"name\"))\n      self.subTypes = try container.decode([SubType].self, forKey: .subTypes)\n  }\n\n  private enum CodingKeys: String, CodingKey {\n    case Optional(\"id\")\n    case Optional(\"name\")\n    case subTypes\n  }\n}\n\n"
-     """
-     */
 
+    
     func analyzeSAMSchema(from jsonData: Data) throws -> JSONSchema {
         let decoder = JSONDecoder()
         let schema = try decoder.decode(JSONSchema.self, from: jsonData)
@@ -218,7 +250,7 @@ extension String {
             let original = try String(contentsOfFile: toFile)
             guard original != self else { return false }
         } catch {
-            // print(error)
+             print(error)
         }
         try write(toFile: toFile, atomically: true, encoding: .utf8)
         return true

@@ -2,6 +2,7 @@ import HummingbirdMustache
 
 public enum Templates {
     static var values: [String: String] = [
+        "enum": enumTemplate,
         "structTemplate": structTemplate,
     ]
 

@@ -41,9 +41,9 @@ struct Command: AsyncParsableCommand, DeploymentDescriptorGeneratorCommand {
             .joined(separator: "/")
     }
 
-    static var defaultOutputFolder: String { "\(rootPath)/awsLambda/output" }
-    static var defaultInputFolder: String { "\(rootPath)/awsLambda/inputs" }
-    static var defaultEndpoints: String { "\(rootPath)/awsLambda/json" }
+    static var defaultOutputFolder: String { "\(rootPath)/samGenerated/models" }
+    static var defaultInputFolder: String { "\(rootPath)/samGenerated/inputs" }
+    static var defaultEndpoints: String { "\(rootPath)/samGenerated/json" }
 
     func run() async throws {
 //        try await DeploymentDescriptorGenerator().generate()
