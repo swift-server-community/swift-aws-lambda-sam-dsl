@@ -11,7 +11,6 @@ import HummingbirdMustache
 import Logging
 import SwiftSyntax
 import SwiftSyntaxBuilder
-import Cocoa
 
 public protocol DeploymentDescriptorGeneratorCommand {
     var inputFile: String? { get }
@@ -118,63 +117,27 @@ public struct DeploymentDescriptorGenerator {
                 .init(name: "name", type: "String"),
             ]
             
-            let subTypeProperties: [TypeSchema.Property] = [
-                .init(name: "subId", type: "Int"),
-                .init(name: "subName", type: "String"),
-            ]
-            
-            let subTypeSchema = TypeSchema(typeName: "SubType", properties: subTypeProperties, subTypes: [])
-            
             let schema = TypeSchema(typeName: "Hello",
                                     properties: properties,
-                                    subTypes: [subTypeSchema])
+                                    subTypes: [])
             
             let modelContext: [String: Any] = [
-                "scope": "public",
-                "object": "struct",
-                "name": schema.typeName,
-                "shapeProtocol": "Codable",
-                "properties": schema.properties.map { property in
-                    [
-                        "scope": "",
-                        "comment": "Fill in comment logic here",
-                        //                        "propertyWrapper": nil,
-                        "variable": property.name,
-                        "type": property.type,
-                        "isOptional": property.type.contains("?"),
-                        "default": false,
-                        "last": property == schema.properties.last,
-                        "required": true,
-                        "isPrimitive": true,
-                        "isCodable": true,
-                        "codableType": property.type,
-                    ]
-                },
-                "subTypes": schema.subTypes.map { subType in
-                    [
                         "scope": "",
                         "object": "struct",
-                        "name": subTypeSchema.typeName,
+                        "name": schema.typeName,
                         "shapeProtocol": "Codable",
-                        "properties": subTypeSchema.properties.map { property in
+                        "typeName": schema.typeName,
+                        "properties": schema.properties.map { property in
                             [
-                                "comment": "Fill in comment logic here",
-                                //                                "propertyWrapper": nil,
+                                "scope": "",
                                 "variable": property.name,
                                 "type": property.type,
                                 "isOptional": property.type.contains("?"),
-                                "default": false,
-                                "last": property == subType.properties.last,
-                                "required": true,
-                                "isPrimitive": true,
-                                "isCodable": true,
-                                "codableType": property.type,
+                                "last": property == schema.properties.last,
                             ]
                         },
-                    ]
-                },
-            ] as [String: Any]
-            
+                    ] as [String : Any]
+
             
             if let template = template {
                 let renderedStruct = template.render(modelContext)
