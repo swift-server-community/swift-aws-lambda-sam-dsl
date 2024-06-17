@@ -36,9 +36,9 @@ struct DeploymentDescriptorGenerator {
             InheritedTypeSyntax(type: TypeSyntax("Sendable"))
         }
         
-        let source = SourceFileSyntax {
+        let source = try SourceFileSyntax {
             //TODO: is there a result builder for DeclModifierSyntax?
-            StructDeclSyntax(modifiers:  DeclModifierListSyntax { DeclModifierSyntax(name: .keyword(.public)) },
+            try StructDeclSyntax(modifiers:  DeclModifierListSyntax { DeclModifierSyntax(name: .keyword(.public)) },
                              name: "JSONSchema",
                              inheritanceClause: defaultInheritance) {
 
@@ -48,6 +48,7 @@ struct DeploymentDescriptorGenerator {
                     }
                 }
 
+                // full function as string 
                 DeclSyntax(
                     """
                     func exampleAddingRawCode() -> JSONSChema {
@@ -55,7 +56,59 @@ struct DeploymentDescriptorGenerator {
                       return result
                     }
                     """
-                )            
+                )
+
+                // function statement as string
+                FunctionDeclSyntax(
+                    leadingTrivia: Trivia.newlines(2),
+                    attributes: [
+                        .attribute(AttributeSyntax("@discardableResult")),
+                    ],
+                    modifiers: [DeclModifierSyntax(name: .keyword(.public))],
+                    name: TokenSyntax.identifier("exampleFunctionFromBuilder"),
+                    signature: FunctionSignatureSyntax(
+                        // parameterClause: FunctionParameterClauseSyntax(
+                        //     parameters: FunctionParameterListSyntax {}
+                        // ),
+                        parameterClause: FunctionParameterClauseSyntax(
+                            parameters: FunctionParameterListSyntax {
+                                FunctionParameterSyntax(
+                                    firstName: TokenSyntax.identifier("a"),
+                                    colon: .colonToken(),
+                                    type: TypeSyntax("String")
+                                )
+                                FunctionParameterSyntax(
+                                    firstName: TokenSyntax.identifier("b"),
+                                    colon: .colonToken(),
+                                    type: TypeSyntax("Bool")
+                                )
+                            }
+                        ),                        
+                        returnClause: ReturnClauseSyntax(
+                            type: IdentifierTypeSyntax(name: .identifier("String"))
+                        )
+                    ),
+                    bodyBuilder: {
+                        StmtSyntax(#"let foo = "Hello World""#) // TODO: how to add a leading trivia ?
+                        ReturnStmtSyntax(expression: ExprSyntax(stringLiteral: "foo"))
+                    }
+                )
+
+                // function header as string
+                try FunctionDeclSyntax("func fibonacci(_ n: Int) -> Int")  {
+                     StmtSyntax("if n <= 1 { return n }")
+                     StmtSyntax("return fibonacci(n - 1) + self.fibonacci(n - 2)")
+                }
+                
+                
+                // mix and match string and statements
+                try FunctionDeclSyntax("func bar() async throws -> Int") {
+                     "var result = 0"
+                     try ForStmtSyntax("for elem in myArray") {
+                         "result += elem"
+                     }
+                     "return result"
+                 }
             }
         }
         
