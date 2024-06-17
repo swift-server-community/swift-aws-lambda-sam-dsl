@@ -1,0 +1,711 @@
+openapi: 3.1.0
+info:
+  title: SAMTemplate
+  version: 1.0.0
+  
+components:
+  schemas:
+    main:
+        "$schema": http://json-schema.org/draft-04/schema#
+        additionalProperties: false
+        properties:
+          AWSTemplateFormatVersion:
+            enum:
+            - '2010-09-09'
+            type: string
+          Conditions:
+            additionalProperties: false
+            patternProperties:
+              "^[a-zA-Z0-9]+$":
+                type: object
+            type: object
+          Description:
+            description: Template description
+            maxLength: 1024
+            type: string
+          Mappings:
+            additionalProperties: false
+            patternProperties:
+              "^[a-zA-Z0-9]+$":
+                type: object
+            type: object
+          Metadata:
+            type: object
+          Outputs:
+            additionalProperties: false
+            maxProperties: 60
+            minProperties: 1
+            patternProperties:
+              "^[a-zA-Z0-9]+$":
+                type: object
+            type: object
+          Parameters:
+            additionalProperties: false
+            maxProperties: 50
+            patternProperties:
+              "^[a-zA-Z0-9]+$":
+                "$ref": "#/components/schemas/Parameter"
+            type: object
+          Resources:
+            additionalProperties: false
+            patternProperties:
+              "^[a-zA-Z0-9]+$":
+                anyOf:
+                - "$ref": "#/components/schemas/AWSServerlessApi"
+                - "$ref": "#/components/schemas/AWSServerlessFunction"
+                - "$ref": "#/components/schemas/AWSServerlessSimpleTable"
+                - "$ref": "#/components/schemas/CloudFormationResource"
+            type: object
+          Transform:
+            enum:
+            - AWSServerless-2016-10-31
+            type: string
+          Globals:
+            type: object
+          Properties:
+            type: object
+        required:
+        - Resources
+        type: object
+    AWSServerlessApi:
+      additionalProperties: false
+      properties:
+        DeletionPolicy:
+          type: string
+        UpdateReplacePolicy:
+          type: string
+        Condition:
+          type: string
+        DependsOn:
+          anyOf:
+          - pattern: "^[a-zA-Z0-9]+$"
+            type: string
+          - items:
+              pattern: "^[a-zA-Z0-9]+$"
+              type: string
+            type: array
+        Metadata:
+          type: object
+        Properties:
+          additionalProperties: false
+          properties:
+            CacheClusterEnabled:
+              type: boolean
+            CacheClusterSize:
+              type: string
+            DefinitionBody:
+              type: object
+            DefinitionUri:
+              anyOf:
+              - type:
+                - string
+              - "$ref": "#/components/schemas/AWSServerlessApi.S3Location"
+            Description:
+              type: string
+            Name:
+              type: string
+            StageName:
+              anyOf:
+              - type: string
+              - type: object
+            TracingEnabled:
+              type: boolean
+            Variables:
+              additionalProperties: false
+              patternProperties:
+                "^[a-zA-Z0-9]+$":
+                  anyOf:
+                  - type: string
+                  - type: object
+              type: object
+          required:
+          - StageName
+          type: object
+        Type:
+          enum:
+          - AWSServerlessApi
+          type: string
+      required:
+      - Type
+      - Properties
+      type: object
+    AWSServerlessApi.S3Location:
+      additionalProperties: false
+      properties:
+        Bucket:
+          type: string
+        Key:
+          type: string
+        Version:
+          type: number
+      required:
+      - Bucket
+      - Key
+      type: object
+    AWSServerlessFunction:
+      additionalProperties: false
+      properties:
+        DeletionPolicy:
+          type: string
+        UpdateReplacePolicy:
+          type: string
+        Condition:
+          type: string
+        DependsOn:
+          anyOf:
+          - pattern: "^[a-zA-Z0-9]+$"
+            type: string
+          - items:
+              pattern: "^[a-zA-Z0-9]+$"
+              type: string
+            type: array
+        Metadata:
+          type: object
+        Properties:
+          allOf:
+          - anyOf:
+            - properties:
+                InlineCode:
+                  type: string
+            - properties:
+                CodeUri:
+                  anyOf:
+                  - type:
+                    - string
+                  - "$ref": "#/components/schemas/AWSServerlessFunction.S3Location"
+          - properties:
+              DeadLetterQueue:
+                "$ref": "#/components/schemas/AWSServerlessFunction.DeadLetterQueue"
+              Description:
+                type: string
+              Environment:
+                "$ref": "#/components/schemas/AWSServerlessFunction.FunctionEnvironment"
+              Events:
+                additionalProperties: false
+                patternProperties:
+                  "^[a-zA-Z0-9]+$":
+                    "$ref": "#/components/schemas/AWSServerlessFunction.EventSource"
+                type: object
+              FunctionName:
+                type: string
+              Handler:
+                type: string
+              KmsKeyArn:
+                type: string
+              MemorySize:
+                type: number
+              Policies:
+                anyOf:
+                - type:
+                  - string
+                - items:
+                    type: string
+                  type: array
+                - "$ref": "#/components/schemas/AWSServerlessFunction.IAMPolicyDocument"
+                - items:
+                    "$ref": "#/components/schemas/AWSServerlessFunction.IAMPolicyDocument"
+                  type: array
+              Role:
+                anyOf:
+                - type: string
+                - type: object
+              Runtime:
+                type: string
+              Tags:
+                additionalProperties: false
+                patternProperties:
+                  "^[a-zA-Z0-9]+$":
+                    type: string
+                type: object
+              Timeout:
+                type: number
+              Tracing:
+                type: string
+              VpcConfig:
+                "$ref": "#/components/schemas/AWSServerlessFunction.VpcConfig"
+            required:
+            - Handler
+            - Runtime
+            type: object
+        Type:
+          enum:
+          - AWSServerlessFunction
+          type: string
+      required:
+      - Type
+      - Properties
+      type: object
+    AWSServerlessFunction.AlexaSkillEvent:
+      additionalProperties: false
+      properties:
+        Variables:
+          additionalProperties: false
+          patternProperties:
+            "^[a-zA-Z0-9]+$":
+              type: string
+          type: object
+      type: object
+    AWSServerlessFunction.ApiEvent:
+      additionalProperties: false
+      properties:
+        Method:
+          type: string
+        Path:
+          type: string
+        RestApiId:
+          anyOf:
+          - type: string
+          - type: object
+      required:
+      - Method
+      - Path
+      type: object
+    AWSServerlessFunction.CloudWatchEventEvent:
+      additionalProperties: false
+      properties:
+        EventBusName:
+          type: string
+        Input:
+          type: string
+        InputPath:
+          type: string
+        Pattern:
+          type: object
+      required:
+      - Pattern
+      type: object
+    AWSServerlessFunction.EventBridgeRule:
+      additionalProperties: false
+      properties:
+        Input:
+          type: string
+        InputPath:
+          type: string
+        Pattern:
+          type: object
+        State:
+          type: string
+        RuleName:
+          type: string
+        DeadLetterConfig:
+          additionalProperties: false
+          properties:
+            Arn:
+              type: string
+            Type:
+              type: string
+            QueueLogicalId:
+              type: string
+          type: object
+        RetryPolicy:
+          additionalProperties: false
+          minProperties: 1
+          properties:
+            MaximumEventAgeInSeconds:
+              type: number
+            MaximumRetryAttempts:
+              type: number
+          type: object
+      required:
+      - Pattern
+      type: object
+    AWSServerlessFunction.LogEvent:
+      additionalProperties: false
+      properties:
+        LogGroupName:
+          type: string
+        FilterPattern:
+          type: string
+      required:
+      - LogGroupName
+      - FilterPattern
+      type: object
+    AWSServerlessFunction.DeadLetterQueue:
+      additionalProperties: false
+      properties:
+        TargetArn:
+          type: string
+        Type:
+          type: string
+      required:
+      - TargetArn
+      - Type
+      type: object
+    AWSServerlessFunction.CognitoEvent:
+      additionalProperties: false
+      properties:
+        UserPool:
+          anyOf:
+          - type: string
+          - type: object
+        Trigger:
+          anyOf:
+          - type: string
+          - items:
+              type: string
+            type: array
+      required:
+      - UserPool
+      - Trigger
+      type: object
+    AWSServerlessFunction.DynamoDBEvent:
+      additionalProperties: false
+      properties:
+        BatchSize:
+          type: number
+        StartingPosition:
+          type: string
+        Stream:
+          type: string
+        Enabled:
+          type: boolean
+      required:
+      - BatchSize
+      - StartingPosition
+      - Stream
+      type: object
+    AWSServerlessFunction.EventSource:
+      additionalProperties: false
+      properties:
+        Properties:
+          anyOf:
+          - "$ref": "#/components/schemas/AWSServerlessFunction.S3Event"
+          - "$ref": "#/components/schemas/AWSServerlessFunction.SNSEvent"
+          - "$ref": "#/components/schemas/AWSServerlessFunction.KinesisEvent"
+          - "$ref": "#/components/schemas/AWSServerlessFunction.MSKEvent"
+          - "$ref": "#/components/schemas/AWSServerlessFunction.MQEvent"
+          - "$ref": "#/components/schemas/AWSServerlessFunction.SQSEvent"
+          - "$ref": "#/components/schemas/AWSServerlessFunction.DynamoDBEvent"
+          - "$ref": "#/components/schemas/AWSServerlessFunction.ApiEvent"
+          - "$ref": "#/components/schemas/AWSServerlessFunction.ScheduleEvent"
+          - "$ref": "#/components/schemas/AWSServerlessFunction.CloudWatchEventEvent"
+          - "$ref": "#/components/schemas/AWSServerlessFunction.EventBridgeRule"
+          - "$ref": "#/components/schemas/AWSServerlessFunction.LogEvent"
+          - "$ref": "#/components/schemas/AWSServerlessFunction.IoTRuleEvent"
+          - "$ref": "#/components/schemas/AWSServerlessFunction.AlexaSkillEvent"
+          - "$ref": "#/components/schemas/AWSServerlessFunction.CognitoEvent"
+        Type:
+          type: string
+      required:
+      - Properties
+      - Type
+      type: object
+    AWSServerlessFunction.FunctionEnvironment:
+      additionalProperties: false
+      properties:
+        Variables:
+          additionalProperties: false
+          patternProperties:
+            "^[a-zA-Z0-9]+$":
+              type: string
+          type: object
+      required:
+      - Variables
+      type: object
+    AWSServerlessFunction.IAMPolicyDocument:
+      additionalProperties: false
+      properties:
+        Statement:
+          items:
+            type: object
+          type: array
+      required:
+      - Statement
+      type: object
+    AWSServerlessFunction.IoTRuleEvent:
+      additionalProperties: false
+      properties:
+        AwsIotSqlVersion:
+          type: string
+        Sql:
+          type: string
+      required:
+      - Sql
+      type: object
+    AWSServerlessFunction.KinesisEvent:
+      additionalProperties: false
+      properties:
+        BatchSize:
+          type: number
+        StartingPosition:
+          type: string
+        Stream:
+          type: string
+        Enabled:
+          type: boolean
+      required:
+      - StartingPosition
+      - Stream
+      type: object
+    AWSServerlessFunction.MSKEvent:
+      additionalProperties: false
+      properties:
+        StartingPosition:
+          type: string
+        Stream:
+          type: string
+        Topics:
+          type: array
+      required:
+      - StartingPosition
+      - Stream
+      - Topics
+      type: object
+    AWSServerlessFunction.MQEvent:
+      additionalProperties: false
+      properties:
+        Broker:
+          type: string
+        Queues:
+          type: array
+        SourceAccessConfigurations:
+          type: array
+      required:
+      - Broker
+      - Queues
+      - SourceAccessConfigurations
+      type: object
+    AWSServerlessFunction.SQSEvent:
+      additionalProperties: false
+      properties:
+        BatchSize:
+          type: number
+        Queue:
+          anyOf:
+          - type: string
+          - type: object
+        Enabled:
+          type: boolean
+      required:
+      - Queue
+      type: object
+    AWSServerlessFunction.S3Event:
+      additionalProperties: false
+      properties:
+        Bucket:
+          anyOf:
+          - type: string
+          - type: object
+        Events:
+          anyOf:
+          - type:
+            - string
+          - items:
+              type: string
+            type: array
+        Filter:
+          "$ref": "#/components/schemas/AWSServerlessFunction.S3NotificationFilter"
+      required:
+      - Bucket
+      - Events
+      type: object
+    AWSServerlessFunction.S3Location:
+      additionalProperties: false
+      properties:
+        Bucket:
+          type: string
+        Key:
+          type: string
+        Version:
+          type: number
+      required:
+      - Bucket
+      - Key
+      type: object
+    AWSServerlessFunction.S3NotificationFilter:
+      additionalProperties: false
+      properties:
+        S3Key:
+          anyOf:
+          - type: string
+          - type: object
+      required:
+      - S3Key
+      type: object
+    AWSServerlessFunction.SNSEvent:
+      additionalProperties: false
+      properties:
+        Topic:
+          type: string
+        Region:
+          type: string
+        FilterPolicy:
+          type: object
+        FilterPolicyScope:
+          type: string
+      required:
+      - Topic
+      type: object
+    AWSServerlessFunction.ScheduleEvent:
+      additionalProperties: false
+      properties:
+        Input:
+          type: string
+        Schedule:
+          type: string
+        Name:
+          type: string
+        Description:
+          type: string
+        Enabled:
+          type: boolean
+      required:
+      - Schedule
+      type: object
+    AWSServerlessFunction.VpcConfig:
+      additionalProperties: false
+      properties:
+        SecurityGroupIds:
+          items:
+            type: string
+          type: array
+        SubnetIds:
+          items:
+            type: string
+          type: array
+        SubnetIdsUsingRef:
+          items:
+            type: object
+          type: array
+      required:
+      - SecurityGroupIds
+      - SubnetIds
+      type: object
+    AWSServerlessSimpleTable:
+      additionalProperties: false
+      properties:
+        DeletionPolicy:
+          type: string
+        UpdateReplacePolicy:
+          type: string
+        Condition:
+          type: string
+        DependsOn:
+          anyOf:
+          - pattern: "^[a-zA-Z0-9]+$"
+            type: string
+          - items:
+              pattern: "^[a-zA-Z0-9]+$"
+              type: string
+            type: array
+        Metadata:
+          type: object
+        Properties:
+          additionalProperties: false
+          properties:
+            PrimaryKey:
+              "$ref": "#/components/schemas/AWSServerlessSimpleTable.PrimaryKey"
+            ProvisionedThroughput:
+              "$ref": "#/components/schemas/AWSServerlessSimpleTable.ProvisionedThroughput"
+            SSESpecification:
+              "$ref": "#/components/schemas/AWSServerlessSimpleTable.SSESpecification"
+          type: object
+        Type:
+          enum:
+          - AWSServerlessSimpleTable
+          type: string
+      required:
+      - Type
+      type: object
+    AWSServerlessSimpleTable.PrimaryKey:
+      additionalProperties: false
+      properties:
+        Name:
+          type: string
+        Type:
+          type: string
+      required:
+      - Type
+      type: object
+    AWSServerlessSimpleTable.ProvisionedThroughput:
+      additionalProperties: false
+      properties:
+        ReadCapacityUnits:
+          type: number
+        WriteCapacityUnits:
+          type: number
+      required:
+      - WriteCapacityUnits
+      type: object
+    AWSServerlessSimpleTable.SSESpecification:
+      additionalProperties: false
+      properties:
+        SSEEnabled:
+          type: boolean
+      required:
+      - SSEEnabled
+      type: object
+    CloudFormationResource:
+      additionalProperties: true
+      properties:
+        Type:
+          pattern: "^(?!^AWSServerless).*"
+          type: string
+      required:
+      - Type
+      type: object
+    Parameter:
+      additionalProperties: false
+      properties:
+        AllowedPattern:
+          type: string
+        AllowedValues:
+          type: array
+        ConstraintDescription:
+          type: string
+        Default:
+          type: string
+        Description:
+          type: string
+        MaxLength:
+          type: string
+        MaxValue:
+          type: string
+        MinLength:
+          type: string
+        MinValue:
+          type: string
+        NoEcho:
+          type:
+          - string
+          - boolean
+        Type:
+          enum:
+          - String
+          - Number
+          - List<Number>
+          - CommaDelimitedList
+          - AWSEC2AvailabilityZoneName
+          - AWSEC2ImageId
+          - AWSEC2InstanceId
+          - AWSEC2KeyPairKeyName
+          - AWSEC2SecurityGroupGroupName
+          - AWSEC2SecurityGroupId
+          - AWSEC2SubnetId
+          - AWSEC2VolumeId
+          - AWSEC2VPCId
+          - AWSRoute53HostedZoneId
+          - List<AWSEC2AvailabilityZoneName>
+          - List<AWSEC2ImageId>
+          - List<AWSEC2InstanceId>
+          - List<AWSEC2SecurityGroupGroupName>
+          - List<AWSEC2SecurityGroupId>
+          - List<AWSEC2SubnetId>
+          - List<AWSEC2VolumeId>
+          - List<AWSEC2VPCId>
+          - List<AWSRoute53HostedZoneId>
+          - List<String>
+          type: string
+      required:
+      - Type
+      type: object
+    Tag:
+      additionalProperties: false
+      properties:
+        Key:
+          type: string
+        Value:
+          anyOf:
+          - type: string
+          - type: object
+      type: object

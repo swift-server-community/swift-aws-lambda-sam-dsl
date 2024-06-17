@@ -17,6 +17,8 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/hummingbird-project/swift-mustache", branch: "main"),
         .package(url: "https://github.com/apple/swift-syntax.git",  branch: "main"),
+        .package(url: "https://github.com/apple/swift-openapi-generator.git", from: "1.2.1"),
+        .package(url: "https://github.com/apple/swift-openapi-runtime.git", from: "1.4.0"),
     ],
     targets: [
 
@@ -24,14 +26,14 @@ let package = Package(
         .target(
             name: "AWSLambdaDeploymentDescriptor",
             path: "Sources/AWSLambdaDeploymentDescriptor"
-//            swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
+            // swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
         ),
 
         // SAM Deployment Descriptor Generator
         .target(
             name: "AWSLambdaDeploymentDescriptorGenerator",
-            path: "Sources/AWSLambdaDeploymentDescriptorGenerator",
-            swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
+            path: "Sources/AWSLambdaDeploymentDescriptorGenerator"
+            // swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
         ),
 
         // a test command line that uses Mustache as template library
@@ -57,6 +59,28 @@ let package = Package(
             path: "Sources/AWSLambdaDeploymentDescriptorGeneratorSwiftSyntax",
             exclude: ["Resources"],
             swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]      
+        ),
+
+        // a test command line that uses the OpenAPI generator for Swift
+        .executableTarget(
+            name: "AWSLambdaDeploymentDescriptorGeneratorOpenAPI",
+            dependencies: [
+                .target(name: "AWSLambdaDeploymentDescriptorGenerator"),
+                .product(name: "OpenAPIRuntime",package: "swift-openapi-runtime"),
+            ],
+            path: "Sources/AWSLambdaDeploymentDescriptorGeneratorOpenAPI",
+            exclude: ["Resources"],
+            resources: [
+              .copy("openapi.yaml"),
+              .copy("openapi-generator-config.yaml")
+            ],
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")],
+            plugins: [
+              .plugin(
+                  name: "OpenAPIGenerator",
+                  package: "swift-openapi-generator"
+              )
+            ]
         ),
 
         // the plugin to generate a SAM deployment descriptor

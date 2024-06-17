@@ -67,6 +67,7 @@ struct DeploymentDescriptorGenerator {
 
 extension JSONType {
     
+    //TODO: should return a type safe value from Swift Syntax library 
     func swiftType() -> String {
         
         guard self.type?.count == 1,
@@ -100,3 +101,4 @@ extension String {
         }
     }
 }
+
