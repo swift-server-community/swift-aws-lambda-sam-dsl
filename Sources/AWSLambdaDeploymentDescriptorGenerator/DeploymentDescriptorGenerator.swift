@@ -29,15 +29,15 @@ public struct DeploymentDescriptorGenerator {
         let filename: String
         let error: Error
     }
-    
+
     static var rootPath: String {
-        return #file
+        #file
             .split(separator: "/", omittingEmptySubsequences: false)
             .dropLast(3)
             .map { String(describing: $0) }
             .joined(separator: "/")
     }
-    
+
     public func generate() {
         // generate code here
 
@@ -64,107 +64,452 @@ public struct DeploymentDescriptorGenerator {
 
     // MARK: - generateWithSwiftSyntax
 
-    func generateWithSwiftSyntax(for schema: TypeSchema) throws -> StructDeclSyntax {
-        try StructDeclSyntax("public struct \(raw: schema.typeName)Request: Decodable") {
-            for property in schema.properties {
-                "public let \(raw: property.name): \(raw: property.type)"
-            }
-            for subType in schema.subTypes {
-                try self.generateWithSwiftSyntax(for: subType)
-            }
-        }
+    func writeGeneratedStructWithSwiftSyntax() {
+        let exampleSchema = TypeSchema(
+            typeName: "Example",
+            properties: [
+                TypeSchema.Property(name: "firstName", type: "String"),
+                TypeSchema.Property(name: "lastName", type: "String"),
+            ],
+            subTypes: [
+                TypeSchema(
+                    typeName: "SubType",
+                    properties: [
+                        TypeSchema.Property(name: "subProperty1", type: "Int"),
+                    ],
+                    subTypes: []
+                ),
+            ]
+        )
+        self.generateTypeSchema(for: exampleSchema)
     }
 
-//    static func main() {
-//      let properties = [
-//        "firstName": "String",
-//        "lastName": "String",
-//        "age": "Int",
-//      ]
-//
-//      let source = SourceFileSyntax {
-//        StructDeclSyntax(name: "Person") {
-//          for (propertyName, propertyType) in properties {
-//            DeclSyntax("var \(raw: propertyName): \(raw: propertyType)")
-//
-//            DeclSyntax(
-//              """
-//              func with\(raw: propertyName.withFirstLetterUppercased())(_ \(raw: propertyName): \(raw: propertyType)) -> Person {
-//                var result = self
-//                result.\(raw: propertyName) = \(raw: propertyName)
-//                return result
-//              }
-//              """
-//            )
-//          }
-//        }
-//      }
-//
-//      print(source.formatted().description)
-//    }
+    func generateDecoderInitializer() -> InitializerDeclSyntax {
+        let parameters = FunctionParameterClauseSyntax {
+            FunctionParameterListSyntax {
+                FunctionParameterSyntax(
+                    modifiers: DeclModifierListSyntax { [DeclModifierSyntax(name: .identifier("from"))] },
+                    firstName: .identifier("decoder"),
+                    colon: .colonToken(trailingTrivia: .space),
+                    type: TypeSyntax(IdentifierTypeSyntax(name: .identifier("Decoder")))
+                )
+            }
+        }
+
+        return InitializerDeclSyntax(
+            modifiers: DeclModifierListSyntax { [DeclModifierSyntax(name: .keyword(.public))] },
+            signature: FunctionSignatureSyntax(
+                parameterClause: parameters,
+                effectSpecifiers: FunctionEffectSpecifiersSyntax(throwsSpecifier: .keyword(.throws))
+            ),
+            body: CodeBlockSyntax {
+                CodeBlockItemListSyntax {
+                    // let container = try decoder.container(keyedBy: CodingKeys.self)
+                    CodeBlockItemSyntax(item: .decl(
+                        DeclSyntax(
+                            VariableDeclSyntax(bindingSpecifier: .keyword(.let)) {
+                                PatternBindingSyntax(
+                                    pattern: PatternSyntax("container"),
+                                    initializer:
+                                    InitializerClauseSyntax(
+                                        equal: .equalToken(trailingTrivia: .space),
+                                        value:
+                                        ExprSyntax(
+                                            TryExprSyntax(
+                                                tryKeyword: .keyword(.try),
+                                                expression:
+                                                FunctionCallExprSyntax(
+                                                    calledExpression: ExprSyntax(MemberAccessExprSyntax(
+                                                        base: ExprSyntax(DeclReferenceExprSyntax(baseName: .identifier("decoder"))),
+                                                        name: .identifier("container")
+                                                    )),
+                                                    leftParen: .leftParenToken(),
+                                                    arguments: LabeledExprListSyntax {
+                                                        LabeledExprSyntax(
+                                                            label: .identifier("keyedBy"),
+                                                            colon: .colonToken(trailingTrivia: .space),
+                                                            expression: ExprSyntax(
+                                                                MemberAccessExprSyntax(
+                                                                    base: ExprSyntax(DeclReferenceExprSyntax(baseName: .identifier("CodingKeys"))),
+                                                                    name: .identifier("self")
+                                                                )
+                                                            )
+                                                        )
+                                                    },
+                                                    rightParen: .rightParenToken()
+                                                )
+                                            ))
+                                    )
+                                )
+                            }
+                        )
+                    ))
+
+                    // self.typeName = try container.decode(String.self, forKey: .typeName)
+                    CodeBlockItemSyntax(item: .expr(
+                        ExprSyntax(
+                            InfixOperatorExprSyntax(
+                                leftOperand: ExprSyntax(
+                                    MemberAccessExprSyntax(
+                                        base: ExprSyntax(DeclReferenceExprSyntax(baseName: .identifier("self"))),
+                                        name: "typeName"
+                                    )),
+                                operator: ExprSyntax(BinaryOperatorExprSyntax(operator: .equalToken())),
+                                rightOperand: ExprSyntax(
+                                    TryExprSyntax(
+                                        tryKeyword: .keyword(.try),
+                                        expression: FunctionCallExprSyntax(
+                                            calledExpression: ExprSyntax(MemberAccessExprSyntax(
+                                                base: ExprSyntax(DeclReferenceExprSyntax(baseName: .identifier("container"))),
+                                                name: .identifier("decode")
+                                            )),
+                                            leftParen: .leftParenToken(),
+                                            arguments: LabeledExprListSyntax {
+                                                LabeledExprSyntax(
+                                                    expression: ExprSyntax(
+                                                        MemberAccessExprSyntax(
+                                                            base: ExprSyntax(DeclReferenceExprSyntax(baseName: .identifier("String"))),
+                                                            name: .identifier("self")
+                                                        )
+                                                    )
+                                                )
+                                                LabeledExprSyntax(
+                                                    label: .identifier("forKey"),
+                                                    colon: .colonToken(trailingTrivia: .space),
+                                                    expression: ExprSyntax(
+                                                        MemberAccessExprSyntax(
+                                                            name: "typeName"
+                                                        )
+                                                    )
+                                                )
+                                            },
+                                            rightParen: .rightParenToken()
+                                        )
+                                    )
+                                ) // end of InfixOperatorExprSyntax
+                            )
+                        )))
+
+                    // self.properties = try container.decode([Property].self, forKey: .properties)
+                    CodeBlockItemSyntax(item: .expr(
+                        ExprSyntax(
+                            InfixOperatorExprSyntax(
+                                leftOperand: ExprSyntax(
+                                    MemberAccessExprSyntax(
+                                        base: ExprSyntax(DeclReferenceExprSyntax(baseName: .identifier("self"))),
+                                        name: "properties"
+                                    )),
+                                operator: ExprSyntax(BinaryOperatorExprSyntax(operator: .equalToken())),
+                                rightOperand: ExprSyntax(
+                                    TryExprSyntax(
+                                        tryKeyword: .keyword(.try),
+                                        expression: FunctionCallExprSyntax(
+                                            calledExpression: ExprSyntax(MemberAccessExprSyntax(
+                                                base: ExprSyntax(DeclReferenceExprSyntax(baseName: .identifier("container"))),
+                                                name: .identifier("decode")
+                                            )),
+                                            leftParen: .leftParenToken(),
+                                            arguments: LabeledExprListSyntax {
+                                                LabeledExprSyntax(
+                                                    expression: ExprSyntax(
+                                                        MemberAccessExprSyntax(
+                                                            base: ExprSyntax(DeclReferenceExprSyntax(baseName: .identifier("[Property]"))),
+                                                            name: .identifier("self")
+                                                        )
+                                                    )
+                                                )
+                                                LabeledExprSyntax(
+                                                    label: .identifier("forKey"),
+                                                    colon: .colonToken(trailingTrivia: .space),
+                                                    expression: ExprSyntax(
+                                                        MemberAccessExprSyntax(
+                                                            name: "properties"
+                                                        )
+                                                    )
+                                                )
+                                            },
+                                            rightParen: .rightParenToken()
+                                        )
+                                    )
+                                ) // end of InfixOperatorExprSyntax
+                            )
+                        ))
+                    )
+
+                    // self.subTypes = try container.decode([TypeSchema].self, forKey: .subTypes)
+                    CodeBlockItemSyntax(item: .expr(
+                        ExprSyntax(
+                            InfixOperatorExprSyntax(
+                                leftOperand: ExprSyntax(
+                                    MemberAccessExprSyntax(
+                                        base: ExprSyntax(DeclReferenceExprSyntax(baseName: .identifier("self"))),
+                                        name: "subTypes"
+                                    )),
+                                operator: ExprSyntax(BinaryOperatorExprSyntax(operator: .equalToken())),
+                                rightOperand: ExprSyntax(
+                                    TryExprSyntax(
+                                        tryKeyword: .keyword(.try),
+                                        expression: FunctionCallExprSyntax(
+                                            calledExpression: ExprSyntax(MemberAccessExprSyntax(
+                                                base: ExprSyntax(DeclReferenceExprSyntax(baseName: .identifier("container"))),
+                                                name: .identifier("decode")
+                                            )),
+                                            leftParen: .leftParenToken(),
+                                            arguments: LabeledExprListSyntax {
+                                                LabeledExprSyntax(
+                                                    expression: ExprSyntax(
+                                                        MemberAccessExprSyntax(
+                                                            base: ExprSyntax(DeclReferenceExprSyntax(baseName: .identifier("[Example]"))),
+                                                            name: .identifier("self")
+                                                        )
+                                                    )
+                                                )
+                                                LabeledExprSyntax(
+                                                    label: .identifier("forKey"),
+                                                    colon: .colonToken(trailingTrivia: .space),
+                                                    expression: ExprSyntax(
+                                                        MemberAccessExprSyntax(
+                                                            name: "subTypes"
+                                                        )
+                                                    )
+                                                )
+                                            },
+                                            rightParen: .rightParenToken()
+                                        )
+                                    )
+                                ) // end of InfixOperatorExprSyntax
+                            )
+                        ))
+                    )
+                }
+            }
+        )
+    }
+
+    func generateTypeSchema(for schema: TypeSchema) {
+        // MARK: - Inheritance
+
+        let structInheritance = InheritanceClauseSyntax {
+            InheritedTypeSyntax(type: TypeSyntax("Decodable"))
+            InheritedTypeSyntax(type: TypeSyntax("Equatable"))
+        }
+
+        let enumInheritance = InheritanceClauseSyntax {
+            InheritedTypeSyntax(type: TypeSyntax("String"))
+            InheritedTypeSyntax(type: TypeSyntax("CodingKey"))
+        }
+
+        // MARK: - Initializer
+
+        let parameters = FunctionParameterClauseSyntax {
+            FunctionParameterListSyntax {
+                FunctionParameterSyntax(
+                    firstName: .identifier("typeName"),
+                    colon: .colonToken(trailingTrivia: .space),
+                    type: TypeSyntax("String")
+                )
+                FunctionParameterSyntax(
+                    firstName: .identifier("properties"),
+                    colon: .colonToken(trailingTrivia: .space),
+                    type: ArrayTypeSyntax(element: TypeSyntax("Property"))
+                )
+                FunctionParameterSyntax(
+                    firstName: .identifier("subTypes"),
+                    colon: .colonToken(trailingTrivia: .space),
+                    type: ArrayTypeSyntax(element: TypeSyntax("\(raw: schema.typeName)"))
+                )
+            }
+        }
+
+        let structInit = InitializerDeclSyntax(
+            signature: FunctionSignatureSyntax(
+                parameterClause: parameters
+            ),
+            body: CodeBlockSyntax {
+                CodeBlockItemListSyntax {
+                    CodeBlockItemSyntax(item: .expr(
+                        ExprSyntax(
+                            InfixOperatorExprSyntax(
+                                leftOperand: ExprSyntax(
+                                    MemberAccessExprSyntax(
+                                        base: ExprSyntax(DeclReferenceExprSyntax(baseName: .identifier("self"))),
+                                        name: "typeName"
+                                    )),
+                                operator: ExprSyntax(BinaryOperatorExprSyntax(operator: .equalToken())),
+                                rightOperand: ExprSyntax(
+                                    DeclReferenceExprSyntax(baseName: .identifier("typeName"))
+                                )
+                            )
+                        )
+                    ))
+
+                    CodeBlockItemSyntax(item: .expr(
+                        ExprSyntax(
+                            InfixOperatorExprSyntax(
+                                leftOperand: ExprSyntax(
+                                    MemberAccessExprSyntax(
+                                        base: ExprSyntax(DeclReferenceExprSyntax(baseName: .identifier("self"))),
+                                        name: "properties"
+                                    )),
+                                operator: ExprSyntax(BinaryOperatorExprSyntax(operator: .equalToken())),
+                                rightOperand: ExprSyntax(
+                                    DeclReferenceExprSyntax(baseName: .identifier("properties"))
+                                )
+                            )
+                        )
+                    ))
+
+                    CodeBlockItemSyntax(item: .expr(
+                        ExprSyntax(
+                            InfixOperatorExprSyntax(
+                                leftOperand: ExprSyntax(
+                                    MemberAccessExprSyntax(
+                                        base: ExprSyntax(DeclReferenceExprSyntax(baseName: .identifier("self"))),
+                                        name: "subTypes"
+                                    )),
+                                operator: ExprSyntax(BinaryOperatorExprSyntax(operator: .equalToken())),
+                                rightOperand: ExprSyntax(
+                                    DeclReferenceExprSyntax(baseName: .identifier("subTypes"))
+                                )
+                            )
+                        )
+                    ))
+                }
+            }
+        )
+
+        let source = SourceFileSyntax {
+            // MARK: - Type Schema Struct
+
+            StructDeclSyntax(modifiers: DeclModifierListSyntax { [DeclModifierSyntax(name: .keyword(.public))] },
+                             name: "\(raw: schema.typeName)",
+                             inheritanceClause: structInheritance) {
+                // MARK: - Main Struct Kyes
+
+                MemberBlockItemListSyntax {
+                    MemberBlockItemSyntax(decl: DeclSyntax("let typeName: String"))
+                    MemberBlockItemSyntax(decl:
+                        VariableDeclSyntax(bindingSpecifier: .keyword(.let)) {
+                            PatternBindingSyntax(pattern: PatternSyntax("properties"),
+                                                 typeAnnotation:
+                                                 TypeAnnotationSyntax(colon: .colonToken(trailingTrivia: .space),
+                                                                      type:
+                                                                      ArrayTypeSyntax(element: TypeSyntax("Property"))))
+                        })
+
+                    MemberBlockItemSyntax(decl: DeclSyntax("let subTypes: [\(raw: schema.typeName)]"))
+                    MemberBlockItemSyntax(decl: structInit)
+                    MemberBlockItemSyntax(decl: self.generateDecoderInitializer())
+                        .with(\.leadingTrivia, .newlines(2))
+                }
+
+                // MARK: - Property Struct
+
+                StructDeclSyntax(modifiers: DeclModifierListSyntax { DeclModifierSyntax(name: .keyword(.public)) },
+                                 name: "Property",
+                                 inheritanceClause: structInheritance) {
+                    MemberBlockItemListSyntax {
+                        // Property: name
+                        MemberBlockItemSyntax(decl:
+                            VariableDeclSyntax(bindingSpecifier: .keyword(.let)) {
+                                PatternBindingSyntax(pattern: PatternSyntax("name"),
+                                                     typeAnnotation:
+                                                     TypeAnnotationSyntax(colon: .colonToken(trailingTrivia: .space),
+                                                                          type:
+                                                                          OptionalTypeSyntax(
+                                                                              wrappedType: TypeSyntax(IdentifierTypeSyntax(name: .identifier("String")))
+                                                                          )))
+                            })
+
+                        // Property: type
+                        MemberBlockItemSyntax(decl:
+                            VariableDeclSyntax(bindingSpecifier: .keyword(.let)) {
+                                PatternBindingSyntax(pattern: PatternSyntax("type"),
+                                                     typeAnnotation:
+                                                     TypeAnnotationSyntax(colon: .colonToken(trailingTrivia: .space),
+                                                                          type:
+                                                                          TypeSyntax(IdentifierTypeSyntax(name: .identifier("String")))))
+                            })
+                    }
+                }.with(\.leadingTrivia, .newlines(2))
+
+                // MARK: - Enum
+
+                EnumDeclSyntax(modifiers: DeclModifierListSyntax { DeclModifierSyntax(name: .keyword(.private)) },
+                               name: .identifier("CodingKeys"),
+                               inheritanceClause: enumInheritance) {
+                    MemberBlockItemListSyntax {
+                        EnumCaseDeclSyntax {
+                            EnumCaseElementListSyntax {
+                                EnumCaseElementSyntax(
+                                    name: .identifier("typeName"),
+                                    rawValue: InitializerClauseSyntax(
+                                        equal: .equalToken(trailingTrivia: .space),
+                                        value: ExprSyntax(StringLiteralExprSyntax(content: "typeName"))
+                                    )
+                                )
+                            }
+                        }.with(\.leadingTrivia, .newlines(1))
+
+                        EnumCaseDeclSyntax {
+                            EnumCaseElementListSyntax {
+                                EnumCaseElementSyntax(name: "properties")
+                            }
+                        }.with(\.leadingTrivia, .newlines(1))
+
+                        EnumCaseDeclSyntax {
+                            EnumCaseElementListSyntax {
+                                EnumCaseElementSyntax(name: "subTypes")
+                            }
+                        }.with(\.leadingTrivia, .newlines(1))
+                    }
+                }.with(\.leadingTrivia, .newlines(2)) // end of enum
+            }.with(\.leadingTrivia, .newlines(1)) // end of Type Schema Struct
+        } // end of SourceFile
+
+        let renderedStruct = source.formatted().description
+        print(renderedStruct)
+        self.writeGeneratedResultToFile(renderedStruct)
+    }
 
     // MARK: - generateWithSwiftMustache
 
     public func generateWithSwiftMustache() {
-        
         do {
             let library = try Templates.createLibrary()
             let template = library.getTemplate(named: "structTemplate")
-            
-            //TODO: Decode JSON here
+
+            // TODO: Decode JSON here
             let properties: [TypeSchema.Property] = [
                 .init(name: "id", type: "Int"),
                 .init(name: "name", type: "String"),
             ]
-            
+
             let schema = TypeSchema(typeName: "Hello",
                                     properties: properties,
                                     subTypes: [])
-            
-            let modelContext: [String: Any] = [
-                        "scope": "",
-                        "object": "struct",
-                        "name": schema.typeName,
-                        "shapeProtocol": "Codable",
-                        "typeName": schema.typeName,
-                        "properties": schema.properties.map { property in
-                            [
-                                "scope": "",
-                                "variable": property.name,
-                                "type": property.type,
-                                "isOptional": property.type.contains("?"),
-                                "last": property == schema.properties.last,
-                            ]
-                        },
-                    ] as [String : Any]
 
-            
+            let modelContext: [String: Any] = [
+                "scope": "",
+                "object": "struct",
+                "name": schema.typeName,
+                "shapeProtocol": "Codable",
+                "typeName": schema.typeName,
+                "properties": schema.properties.map { property in
+                    [
+                        "scope": "",
+                        "variable": property.name ?? "",
+                        "type": property.type,
+                        "isOptional": property.type.contains("?"),
+                        "last": property == schema.properties.last,
+                    ]
+                },
+            ] as [String: Any]
+
             if let template = template {
                 let renderedStruct = template.render(modelContext)
                 print(renderedStruct)
-                let projectDirectory =  "\(DeploymentDescriptorGenerator.rootPath)"
-                let filePath = projectDirectory + "/Sources/AWSLambdaDeploymentDescriptorGenerator/dummyGenerated.swift"
-                
-                let directoryPath = (filePath as NSString).deletingLastPathComponent
-                var isDirectory: ObjCBool = false
-                if !FileManager.default.fileExists(atPath: directoryPath, isDirectory: &isDirectory) {
-                    print("Error: Directory does not exist.")
-                    return
-                }
-                
-                let writable = FileManager.default.isWritableFile(atPath: directoryPath)
-                if !writable {
-                    print("Error: No write permissions for the directory.")
-                    return
-                }
-                
-                do {
-                    if try renderedStruct.writeIfChanged(toFile: filePath) {
-                        print("Success Wrote ✅")
-                    }
-                } catch {
-                    print("Error writing file: \(error)")
-                }
+                self.writeGeneratedResultToFile(renderedStruct)
             } else {
                 print("Error: Template 'structTemplate' not found")
             }
@@ -173,8 +518,32 @@ public struct DeploymentDescriptorGenerator {
         }
     }
 
+    func writeGeneratedResultToFile(_ result: String) {
+        let projectDirectory = "\(DeploymentDescriptorGenerator.rootPath)"
+        let filePath = projectDirectory + "/Sources/AWSLambdaDeploymentDescriptorGenerator/dummyGenerated.swift"
 
-    
+        let directoryPath = (filePath as NSString).deletingLastPathComponent
+        var isDirectory: ObjCBool = false
+        if !FileManager.default.fileExists(atPath: directoryPath, isDirectory: &isDirectory) {
+            print("Error: Directory does not exist.")
+            return
+        }
+
+        let writable = FileManager.default.isWritableFile(atPath: directoryPath)
+        if !writable {
+            print("Error: No write permissions for the directory.")
+            return
+        }
+
+        do {
+            if try result.writeIfChanged(toFile: filePath) {
+                print("Success Wrote ✅")
+            }
+        } catch {
+            print("Error writing file: \(error)")
+        }
+    }
+
     func analyzeSAMSchema(from jsonData: Data) throws -> JSONSchema {
         let decoder = JSONDecoder()
         let schema = try decoder.decode(JSONSchema.self, from: jsonData)
@@ -213,7 +582,7 @@ extension String {
             let original = try String(contentsOfFile: toFile)
             guard original != self else { return false }
         } catch {
-             print(error)
+            print(error)
         }
         try write(toFile: toFile, atomically: true, encoding: .utf8)
         return true

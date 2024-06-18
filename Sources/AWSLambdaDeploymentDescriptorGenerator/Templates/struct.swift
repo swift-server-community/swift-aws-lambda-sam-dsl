@@ -1,7 +1,7 @@
 extension Templates {
     static let structTemplate = #"""
     {{%CONTENT_TYPE:TEXT}}
-    
+
     {{scope}} struct {{name}}: {{shapeProtocol}} {
         {{scope}} let typeName: String
         {{#properties}}
@@ -46,7 +46,7 @@ extension Templates {
             {{/subTypes}}
             case properties
         }
-        
+
         {{scope}} struct Property: Codable {
             {{scope}} let name: String
             {{scope}} let type: String

@@ -1,52 +1,29 @@
 
- struct Hello: Codable {
-     let typeName: String
-     let id: Int
-     let name: String
-
-     let properties: [Property]
-
-     init(typeName: String, id: Int, name: String, properties: [Property]) {
+public struct Example: Decodable, Equatable {
+    let typeName: String
+    let properties: [Property]
+    let subTypes: [Example]
+    init(typeName: String, properties: [Property], subTypes: [Example]) {
         self.typeName = typeName
-        self.id = id
-        self.name = name
         self.properties = properties
+        self.subTypes = subTypes
     }
 
-     init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.typeName = try container.decode(String.self, forKey: .typeName)
-        self.id = try container.decode(Int.self, forKey: .id)
-        self.name = try container.decode(String.self, forKey: .name)
         self.properties = try container.decode([Property].self, forKey: .properties)
+        self.subTypes = try container.decode([Example].self, forKey: .subTypes)
+    }
+
+    public struct Property: Decodable, Equatable {
+        let name: String?
+        let type: String
     }
 
     private enum CodingKeys: String, CodingKey {
         case typeName
-        case id
-        case name
         case properties
-    }
-    
-     struct Property: Codable {
-         let name: String
-         let type: String
-
-         init(name: String, type: String) {
-            self.name = name
-            self.type = type
-        }
-
-         init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
-            self.name = try container.decode(String.self, forKey: .name)
-            self.type = try container.decode(String.self, forKey: .type)
-        }
-
-        private enum CodingKeys: String, CodingKey {
-            case name
-            case type
-        }
+        case subTypes
     }
 }
-

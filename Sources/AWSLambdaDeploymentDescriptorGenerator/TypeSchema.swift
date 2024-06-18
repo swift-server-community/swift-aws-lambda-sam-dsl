@@ -19,7 +19,7 @@ struct TypeSchema: Decodable, Equatable {
     }
 
     struct Property: Decodable, Equatable {
-        let name: String
+        let name: String?
         let type: String
 
         init(name: String, type: String) {
