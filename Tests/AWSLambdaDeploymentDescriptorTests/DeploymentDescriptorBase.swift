@@ -14,6 +14,7 @@
 
 @testable import AWSLambdaDeploymentDescriptor
 import XCTest
+import Yams
 
 class DeploymentDescriptorBaseTest: XCTestCase {
 
@@ -58,20 +59,19 @@ class DeploymentDescriptorBaseTest: XCTestCase {
     enum Expected {
         case keyOnly(indent: Int, key: String)
         case keyValue(indent: Int, keyValue: [String: String])
-        case arrayKey(indent: Int, key: String)
+        case arrayKey(indent: Int, key: String? = nil, value: String? = nil)
 //        case arrayKeyValue(indent: Int, key: [String:String])
         func string() -> [String] {
-            let indent: Int = YAMLEncoder.singleIndent
+            let indent = 2 // default indent for Yams encoder
             var value: [String] = []
             switch self {
             case .keyOnly(let i, let k):
                 value = [String(repeating: " ", count: indent * i) +  "\(k):"]
             case .keyValue(let i, let kv):
                 value = kv.keys.map { String(repeating: " ", count: indent * i) + "\($0): \(kv[$0] ?? "")" }
-            case .arrayKey(let i, let k):
-                value = [String(repeating: " ", count: indent * i) + "- \(k)"]
+            case .arrayKey(let i, let k, let v):
+                value = [String(repeating: " ", count: indent * i) + "- \(k ?? "")\(v == nil ? "" : ": \(v!)")"]
 //            case .arrayKeyValue(let i, let kv):
-//                indent = i
 //                value = kv.keys.map { "- \($0): \(String(describing: kv[$0]))" }.joined(separator: "\n")
             }
             return value
@@ -98,7 +98,7 @@ class DeploymentDescriptorBaseTest: XCTestCase {
             print("===========")
             print(samYAML)
             print("-----------")
-            print(expected.compactMap { $0.string().joined(separator: "\n") } .joined(separator: "\n"))
+           print(expected.compactMap { $0.string().joined(separator: "\n") } .joined(separator: "\n"))
             print("===========")
        }
 
@@ -122,7 +122,7 @@ class DeploymentDescriptorBaseTest: XCTestCase {
         return [Expected.keyValue(indent: 0,
                                  keyValue: [
                                     "Description": "A SAM template to deploy a Swift Lambda function",
-                                    "AWSTemplateFormatVersion": "2010-09-09",
+                                    "AWSTemplateFormatVersion": "'2010-09-09'",
                                     "Transform": "AWS::Serverless-2016-10-31"])
                 ]
     }
@@ -138,7 +138,7 @@ class DeploymentDescriptorBaseTest: XCTestCase {
                 "CodeUri": self.codeURI,
                 "Runtime": "provided.al2"]),
             Expected.keyOnly(indent: 3, key: "Architectures"),
-            Expected.arrayKey(indent: 4, key: architecture)
+            Expected.arrayKey(indent: 3, key: architecture)
             ]
 
     }
@@ -180,8 +180,8 @@ class DeploymentDescriptorBaseTest: XCTestCase {
                                                     "BatchSize": "10"]),
             Expected.keyOnly(indent: 6, key: "Queue"),
             Expected.keyOnly(indent: 7, key: "Fn::GetAtt"),
-            Expected.arrayKey(indent: 8, key: source),
-            Expected.arrayKey(indent: 8, key: "Arn")
+            Expected.arrayKey(indent: 7, key: source),
+            Expected.arrayKey(indent: 7, key: "Arn")
         ]
     }
 

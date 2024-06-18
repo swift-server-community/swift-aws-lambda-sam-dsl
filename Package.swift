@@ -15,11 +15,14 @@ let package = Package(
         .library(name: "AWSLambdaDeploymentDescriptor", type: .dynamic, targets: ["AWSLambdaDeploymentDescriptor"]),
     ],
     dependencies: [
+        .package(url: "https://github.com/jpsim/Yams.git", from: "5.1.2")
     ],
     targets: [
         .target(
             name: "AWSLambdaDeploymentDescriptor",
-            path: "Sources/AWSLambdaDeploymentDescriptor"
+            dependencies: [ .product(name: "Yams", package: "Yams")],
+            path: "Sources/AWSLambdaDeploymentDescriptor",
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
         ),
         .plugin(
             name: "AWSLambdaDeployer",
@@ -35,14 +38,8 @@ let package = Package(
             name: "AWSLambdaDeploymentDescriptorTests",
             dependencies: [
                 .byName(name: "AWSLambdaDeploymentDescriptor"),
-            ]
-        ),
-        .testTarget(
-            name: "AWSLambdaDeploymentDescriptorGeneratorTests",
-            // https://stackoverflow.com/questions/47177036/use-resources-in-unit-tests-with-swift-package-manager
-            resources: [
-                .copy("Resources/SimpleJSONSchema.json"),
-                .copy("Resources/SAMJSONSchema.json")]
+            ],
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
         ),
     ]
 )

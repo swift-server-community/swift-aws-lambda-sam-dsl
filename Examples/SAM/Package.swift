@@ -29,7 +29,8 @@ let package = Package(
   ],
   dependencies: [
     .package(url: "https://github.com/swift-server/swift-aws-lambda-runtime.git", branch: "main"),
-    .package(url: "https://github.com/swift-server/swift-aws-lambda-events.git", branch: "main")
+    .package(url: "https://github.com/swift-server/swift-aws-lambda-events.git", branch: "main"),
+    .package(url: "../../../swift-aws-lambda-sam-dsl", branch: "main"), 
   ],
   targets: [
     .executableTarget(
@@ -71,11 +72,11 @@ let package = Package(
   ]
 )
 
-// for CI to test the local version of the library
-if ProcessInfo.processInfo.environment["LAMBDA_USE_LOCAL_DEPS"] != nil {
-    package.dependencies = [
-        .package(name: "swift-aws-lambda-runtime", path: "../.."),
-        // .package(url: "../../../swift-aws-lambda-runtime", branch: "sebsto/use_local_deps"), // to have the LAMBDA_USE_LOCAL_DEPS env var on plugin archive (temp until https://github.com/swift-server/swift-aws-lambda-runtime/pull/325 is merged)
-        .package(url: "https://github.com/swift-server/swift-aws-lambda-events.git", branch: "main")
-    ]
-}
+// // for CI to test the local version of the library
+// if ProcessInfo.processInfo.environment["LAMBDA_USE_LOCAL_DEPS"] != nil {
+//     package.dependencies = [
+//         // use local package in ../..
+//         .package(url: "../../../swift-aws-lambda-runtime", branch: "main"), 
+//         .package(url: "https://github.com/swift-server/swift-aws-lambda-events.git", branch: "main")
+//     ]
+// }

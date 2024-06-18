@@ -14,6 +14,7 @@
 
 @testable import AWSLambdaDeploymentDescriptor
 import XCTest
+import Yams
 
 // this test case tests the generation of the SAM deployment descriptor in JSON
 final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
@@ -136,11 +137,10 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
         let mount2 = "/mnt/path2"
         let expected = [
             Expected.keyOnly(indent: 3, key: "FileSystemConfigs"),
-            Expected.arrayKey(indent: 4, key: ""),
-            Expected.keyValue(indent: 5, keyValue: ["Arn":validArn,
-                                                    "LocalMountPath" : mount1]),
-            Expected.keyValue(indent: 5, keyValue: ["Arn":validArn,
-                                                    "LocalMountPath" : mount2])
+            Expected.arrayKey(indent: 3, key: "Arn", value: validArn),
+            Expected.keyValue(indent: 4, keyValue: ["LocalMountPath" : mount1]),
+            Expected.arrayKey(indent: 3, key: "Arn", value: validArn),
+            Expected.keyValue(indent: 4, keyValue: ["LocalMountPath" : mount2])
         ]
         
         // when
@@ -198,13 +198,13 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
             Expected.keyValue(indent: 5, keyValue: ["MaxAge":"99",
                                                     "AllowCredentials" : "true"]),
             Expected.keyOnly(indent: 5, key: "AllowHeaders"),
-            Expected.arrayKey(indent: 6, key: "allowHeaders"),
+            Expected.arrayKey(indent: 5, key: "allowHeaders"),
             Expected.keyOnly(indent: 5, key: "AllowMethods"),
-            Expected.arrayKey(indent: 6, key: "allowMethod"),
+            Expected.arrayKey(indent: 5, key: "allowMethod"),
             Expected.keyOnly(indent: 5, key: "AllowOrigins"),
-            Expected.arrayKey(indent: 6, key: "allowOrigin"),
+            Expected.arrayKey(indent: 5, key: "allowOrigin"),
             Expected.keyOnly(indent: 5, key: "ExposeHeaders"),
-            Expected.arrayKey(indent: 6, key: "exposeHeaders")
+            Expected.arrayKey(indent: 5, key: "exposeHeaders")
         ]
         
         // when
@@ -317,6 +317,7 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
         let expected = expectedSAMHeaders() +
         expectedFunction(architecture: ServerlessFunctionProperties.Architectures.defaultArchitecture().rawValue) +
         [
+            Expected.keyOnly(indent: 3, key: "Events"),
             Expected.keyOnly(indent: 4, key: "HttpApiEvent"),
             Expected.keyValue(indent: 5, keyValue: ["Type": "HttpApi"]),
             Expected.keyOnly(indent: 5, key: "Properties"),
@@ -395,7 +396,7 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
         let expected = [
             Expected.keyOnly(indent: 3, key: "Environment"),
             Expected.keyOnly(indent: 4, key: "Variables"),
-            Expected.keyValue(indent: 5, keyValue: [
+            Expected.keyValue(indent: 4, keyValue: [
                 "TEST2_VAR": "TEST2_VALUE",
                 "TEST1_VAR": "TEST1_VALUE"
             ])
@@ -438,8 +439,8 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
             Expected.keyOnly(indent: 4, key: "Variables"),
             Expected.keyOnly(indent: 5, key: "TEST1_VAR"),
             Expected.keyOnly(indent: 6, key: "Fn::GetAtt"),
-            Expected.arrayKey(indent: 7, key: "TEST1_VALUE"),
-            Expected.arrayKey(indent: 7, key: "Arn")
+            Expected.arrayKey(indent: 6, key: "TEST1_VALUE"),
+            Expected.arrayKey(indent: 6, key: "Arn")
         ]
 
         var envVar = SAMEnvironmentVariable()
@@ -477,11 +478,11 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
         let validArn = "arn:aws:sqs:eu-central-1:012345678901:lambda-test"
 
         // when
-        let arn = Arn(validArn)
+        let arn = try XCTUnwrap(Arn(validArn))
         let yaml = try YAMLEncoder().encode(arn)
 
         // then
-        XCTAssertEqual(String(decoding: yaml, as: UTF8.self), arn?.arn)
+        XCTAssertTrue(yaml.contains(arn.arn))
     }
 
     func testArnOK() {
@@ -506,33 +507,33 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
         XCTAssertNil(arn)
     }
 
-    func testServicefromArn() {
+    func testServicefromArn() throws {
         // given
         var validArn = "arn:aws:sqs:eu-central-1:012345678901:lambda-test"
 
         // when
-        var arn = Arn(validArn)
+        var arn = try XCTUnwrap(Arn(validArn))
 
         // then
-        XCTAssertEqual("sqs", arn!.service())
+        XCTAssertEqual("sqs", arn.service())
 
         // given
         validArn = "arn:aws:lambda:eu-central-1:012345678901:lambda-test"
 
         // when
-        arn = Arn(validArn)
+        arn = try XCTUnwrap(Arn(validArn))
 
         // then
-        XCTAssertEqual("lambda", arn!.service())
+        XCTAssertEqual("lambda", arn.service())
 
         // given
         validArn = "arn:aws:event-bridge:eu-central-1:012345678901:lambda-test"
 
         // when
-        arn = Arn(validArn)
+        arn = try XCTUnwrap(Arn(validArn))
 
         // then
-        XCTAssertEqual("event-bridge", arn!.service())
+        XCTAssertEqual("event-bridge", arn.service())
     }
 
 }

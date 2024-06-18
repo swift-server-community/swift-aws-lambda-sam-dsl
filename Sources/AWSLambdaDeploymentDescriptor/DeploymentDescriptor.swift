@@ -20,12 +20,11 @@ import Foundation
 // a Swift definition of a SAM deployment descriptor.
 // currently limited to the properties I needed for the examples.
 // An immediate TODO if this code is accepted is to add more properties and more struct
-public struct SAMDeploymentDescriptor: Encodable {
-
+public struct SAMDeploymentDescriptor: Encodable, Sendable {
   let templateVersion: String = "2010-09-09"
   let transform: String = "AWS::Serverless-2016-10-31"
   let description: String
-  var resources: [String: Resource<ResourceType>] = [:]
+  var resources: [String: Resource<ResourceType>]?
 
   public init(
     description: String,
@@ -33,25 +32,28 @@ public struct SAMDeploymentDescriptor: Encodable {
   ) {
     self.description = description
 
-    // extract resources names for serialization
-    for res in resources {
-      self.resources[res.name] = res
+    if resources.count > 0 {
+      self.resources = [:]
+      // extract resources names for serialization
+      for res in resources {
+        self.resources![res.name] = res
+      }
     }
   }
 
   enum CodingKeys: String, CodingKey {
     case templateVersion = "AWSTemplateFormatVersion"
-    case transform
-    case description
-    case resources
+    case transform = "Transform"
+    case description = "Description"
+    case resources = "Resources"
   }
 }
 
-public protocol SAMResource: Encodable, Equatable {}
-public protocol SAMResourceType: Encodable, Equatable {}
-public protocol SAMResourceProperties: Encodable {}
+public protocol SAMResource: Encodable, Equatable, Sendable {}
+public protocol SAMResourceType: Encodable, Equatable, Sendable {}
+public protocol SAMResourceProperties: Encodable, Sendable {}
 
-// public protocol Table: SAMResource { 
+// public protocol Table: SAMResource {
 //   func type() -> String
 // }
 // public extension Table {
@@ -71,7 +73,6 @@ public enum EventSourceType: String, SAMResourceType {
 
 // generic type to represent either a top-level resource or an event source
 public struct Resource<T: SAMResourceType>: SAMResource {
-
   let type: T
   let properties: SAMResourceProperties?
   let name: String
@@ -80,9 +81,9 @@ public struct Resource<T: SAMResourceType>: SAMResource {
     lhs.type == rhs.type && lhs.name == rhs.name
   }
 
-  enum CodingKeys: CodingKey {
-    case type
-    case properties
+  enum CodingKeys: String, CodingKey {
+    case type = "Type"
+    case properties = "Properties"
   }
 
   // this is to make the compiler happy : Resource now conforms to Encodable
@@ -104,10 +105,9 @@ public struct Resource<T: SAMResourceType>: SAMResource {
  -----------------------------------------------------------------------------------------*/
 
 public struct ServerlessFunctionProperties: SAMResourceProperties {
-
-  public enum Architectures: String, Encodable, CaseIterable {
+  public enum Architectures: String, Encodable, CaseIterable, Sendable {
     case x64 = "x86_64"
-    case arm64 = "arm64"
+    case arm64
 
     // the default value is the current architecture
     public static func defaultArchitecture() -> Architectures {
@@ -120,28 +120,29 @@ public struct ServerlessFunctionProperties: SAMResourceProperties {
 
     // valid values for error and help message
     public static func validValues() -> String {
-      return Architectures.allCases.map { $0.rawValue }.joined(separator: ", ")
+      Architectures.allCases.map(\.rawValue).joined(separator: ", ")
     }
   }
 
   // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-lambda-function-ephemeralstorage.html
-  public struct EphemeralStorage: Encodable {
+  public struct EphemeralStorage: Encodable, Sendable {
     private let validValues = 512...10240
     let size: Int
     init?(_ size: Int) {
-      if validValues.contains(size) {
+      if self.validValues.contains(size) {
         self.size = size
       } else {
         return nil
       }
     }
+
     enum CodingKeys: String, CodingKey {
       case size = "Size"
     }
   }
 
-  public struct EventInvokeConfiguration: Encodable {
-    public enum EventInvokeDestinationType: String, Encodable {
+  public struct EventInvokeConfiguration: Encodable, Sendable {
+    public enum EventInvokeDestinationType: String, Encodable, Sendable {
       case sqs = "SQS"
       case sns = "SNS"
       case lambda = "Lambda"
@@ -164,6 +165,7 @@ public struct ServerlessFunctionProperties: SAMResourceProperties {
           return nil
         }
       }
+
       public static func destinationType(from resource: Resource<ResourceType>?)
         -> EventInvokeDestinationType?
       {
@@ -180,22 +182,37 @@ public struct ServerlessFunctionProperties: SAMResourceProperties {
         }
       }
     }
-    public struct EventInvokeDestination: Encodable {
+
+    public struct EventInvokeDestination: Encodable, Sendable {
       let destination: Reference?
       let type: EventInvokeDestinationType?
+      public enum CodingKeys: String, CodingKey {
+        case destination = "Destination"
+        case type = "Type"
+      }
     }
-    public struct EventInvokeDestinationConfiguration: Encodable {
+
+    public struct EventInvokeDestinationConfiguration: Encodable, Sendable {
       let onSuccess: EventInvokeDestination?
       let onFailure: EventInvokeDestination?
+      public enum CodingKeys: String, CodingKey {
+        case onSuccess = "OnSuccess"
+        case onFailure = "OnFailure"
+      }
     }
+
     let destinationConfig: EventInvokeDestinationConfiguration?
     let maximumEventAgeInSeconds: Int?
     let maximumRetryAttempts: Int?
+    public enum CodingKeys: String, CodingKey {
+      case destinationConfig = "DestinationConfig"
+      case maximumEventAgeInSeconds = "MaximumEventAgeInSeconds"
+      case maximumRetryAttempts = "MaximumRetryAttempts"
+    }
   }
 
-  //TODO: add support for reference to other resources of type elasticfilesystem or mountpoint
-  public struct FileSystemConfig: Encodable {
-
+  // TODO: add support for reference to other resources of type elasticfilesystem or mountpoint
+  public struct FileSystemConfig: Encodable, Sendable {
     // regex from
     // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-lambda-function-filesystemconfig.html
     let validMountPathRegex = #"^/mnt/[a-zA-Z0-9-_.]+$"#
@@ -205,42 +222,59 @@ public struct ServerlessFunctionProperties: SAMResourceProperties {
     let localMountPath: String
 
     public init?(arn: String, localMountPath: String) {
-
-      guard arn.range(of: validArnRegex, options: .regularExpression) != nil,
-        localMountPath.range(of: validMountPathRegex, options: .regularExpression) != nil
+      guard arn.range(of: self.validArnRegex, options: .regularExpression) != nil,
+        localMountPath.range(of: self.validMountPathRegex, options: .regularExpression) != nil
       else {
         return nil
       }
 
-      self.reference = .arn(Arn(arn)!)
+      guard let realArn = Arn(arn) else { return nil }
+      self.reference = .arn(realArn)
       self.localMountPath = localMountPath
     }
+
     enum CodingKeys: String, CodingKey {
       case reference = "Arn"
-      case localMountPath
+      case localMountPath = "LocalMountPath"
     }
   }
 
-  public struct URLConfig: Encodable {
-    public enum AuthType: String, Encodable {
+  public struct URLConfig: Encodable, Sendable {
+    public enum AuthType: String, Encodable, Sendable {
       case iam = "AWS_IAM"
       case none = "None"
     }
-    public enum InvokeMode: String, Encodable {
+
+    public enum InvokeMode: String, Encodable, Sendable {
       case responseStream = "RESPONSE_STREAM"
       case buffered = "BUFFERED"
     }
-    public struct Cors: Encodable {
+
+    public struct Cors: Encodable, Sendable {
       let allowCredentials: Bool?
       let allowHeaders: [String]?
       let allowMethods: [String]?
       let allowOrigins: [String]?
       let exposeHeaders: [String]?
       let maxAge: Int?
+      public enum CodingKeys: String, CodingKey {
+        case allowCredentials = "AllowCredentials"
+        case allowHeaders = "AllowHeaders"
+        case allowMethods = "AllowMethods"
+        case allowOrigins = "AllowOrigins"
+        case exposeHeaders = "ExposeHeaders"
+        case maxAge = "MaxAge"
+      }
     }
+
     let authType: AuthType
     let cors: Cors?
     let invokeMode: InvokeMode?
+    public enum CodingKeys: String, CodingKey {
+      case authType = "AuthType"
+      case cors = "Cors"
+      case invokeMode = "InvokeMode"
+    }
   }
 
   let architectures: [Architectures]
@@ -264,7 +298,6 @@ public struct ServerlessFunctionProperties: SAMResourceProperties {
     eventSources: [Resource<EventSourceType>] = [],
     environment: SAMEnvironmentVariable? = nil
   ) {
-
     self.architectures = [architecture]
     self.handler = "Provided"
     self.runtime = "provided.al2"  // Amazon Linux 2 supports both arm64 and x64
@@ -278,6 +311,23 @@ public struct ServerlessFunctionProperties: SAMResourceProperties {
       }
     }
   }
+
+  public enum CodingKeys: String, CodingKey {
+    case architectures = "Architectures"
+    case handler = "Handler"
+    case runtime = "Runtime"
+    case codeUri = "CodeUri"
+    case autoPublishAlias = "AutoPublishAlias"
+    case autoPublishAliasAllProperties = "AutoPublishAliasAllProperties"
+    case autoPublishCodeSha256 = "AutoPublishCodeSha256"
+    case events = "Events"
+    case environment = "Environment"
+    case description = "Description"
+    case ephemeralStorage = "EphemeralStorage"
+    case eventInvokeConfig = "EventInvokeConfig"
+    case fileSystemConfigs = "FileSystemConfigs"
+    case functionUrlConfig = "FunctionUrlConfig"
+  }
 }
 
 /*
@@ -285,8 +335,7 @@ public struct ServerlessFunctionProperties: SAMResourceProperties {
  Variables:
  LOG_LEVEL: debug
  */
-public struct SAMEnvironmentVariable: Encodable {
-
+public struct SAMEnvironmentVariable: Encodable, Sendable {
   public var variables: [String: SAMEnvironmentVariableValue] = [:]
   public init() {}
   public init(_ variables: [String: String]) {
@@ -294,46 +343,50 @@ public struct SAMEnvironmentVariable: Encodable {
       self.variables[key] = .string(value: variables[key] ?? "")
     }
   }
-  public static var none: SAMEnvironmentVariable { return SAMEnvironmentVariable([:]) }
+
+  public static var none: SAMEnvironmentVariable { SAMEnvironmentVariable([:]) }
 
   public static func variable(_ name: String, _ value: String) -> SAMEnvironmentVariable {
-    return SAMEnvironmentVariable([name: value])
+    SAMEnvironmentVariable([name: value])
   }
-  public static func variable(_ variables: [String: String]) -> SAMEnvironmentVariable {
-    return SAMEnvironmentVariable(variables)
-  }
-  public static func variable(_ variables: [[String: String]]) -> SAMEnvironmentVariable {
 
+  public static func variable(_ variables: [String: String]) -> SAMEnvironmentVariable {
+    SAMEnvironmentVariable(variables)
+  }
+
+  public static func variable(_ variables: [[String: String]]) -> SAMEnvironmentVariable {
     var mergedDictKeepCurrent: [String: String] = [:]
     variables.forEach { dict in
       // inspired by https://stackoverflow.com/a/43615143/663360
-      mergedDictKeepCurrent = mergedDictKeepCurrent.merging(dict) { (current, _) in current }
+      mergedDictKeepCurrent = mergedDictKeepCurrent.merging(dict) { current, _ in current }
     }
 
     return SAMEnvironmentVariable(mergedDictKeepCurrent)
-
   }
-  public func isEmpty() -> Bool { return variables.count == 0 }
+
+  public func isEmpty() -> Bool { self.variables.count == 0 }
 
   public mutating func append(_ key: String, _ value: String) {
-    variables[key] = .string(value: value)
-  }
-  public mutating func append(_ key: String, _ value: [String: String]) {
-    variables[key] = .array(value: value)
-  }
-  public mutating func append(_ key: String, _ value: [String: [String]]) {
-    variables[key] = .dictionary(value: value)
-  }
-  public mutating func append(_ key: String, _ value: Resource<ResourceType>) {
-    variables[key] = .array(value: ["Ref": value.name])
+    self.variables[key] = .string(value: value)
   }
 
-  enum CodingKeys: CodingKey {
-    case variables
+  public mutating func append(_ key: String, _ value: [String: String]) {
+    self.variables[key] = .array(value: value)
+  }
+
+  public mutating func append(_ key: String, _ value: [String: [String]]) {
+    self.variables[key] = .dictionary(value: value)
+  }
+
+  public mutating func append(_ key: String, _ value: Resource<ResourceType>) {
+    self.variables[key] = .array(value: ["Ref": value.name])
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case variables = "Variables"
   }
 
   public func encode(to encoder: Encoder) throws {
-
     guard !self.isEmpty() else {
       return
     }
@@ -341,8 +394,8 @@ public struct SAMEnvironmentVariable: Encodable {
     var container = encoder.container(keyedBy: CodingKeys.self)
     var nestedContainer = container.nestedContainer(keyedBy: AnyStringKey.self, forKey: .variables)
 
-    for key in variables.keys {
-      switch variables[key] {
+    for key in self.variables.keys {
+      switch self.variables[key] {
       case .string(let value):
         try? nestedContainer.encode(value, forKey: AnyStringKey(key))
       case .array(let value):
@@ -355,7 +408,7 @@ public struct SAMEnvironmentVariable: Encodable {
     }
   }
 
-  public enum SAMEnvironmentVariableValue {
+  public enum SAMEnvironmentVariableValue: Sendable {
     // KEY: VALUE
     case string(value: String)
 
@@ -371,17 +424,18 @@ public struct SAMEnvironmentVariable: Encodable {
   }
 }
 
-internal struct AnyStringKey: CodingKey, Hashable, ExpressibleByStringLiteral {
+internal struct AnyStringKey: CodingKey, Hashable, ExpressibleByStringLiteral, Sendable {
   var stringValue: String
   init(stringValue: String) { self.stringValue = stringValue }
   init(_ stringValue: String) { self.init(stringValue: stringValue) }
   var intValue: Int?
-  init?(intValue: Int) { return nil }
+  init?(intValue: Int) { nil }
   init(stringLiteral value: String) { self.init(value) }
 }
 
 // MARK: HTTP API Event definition
-/*---------------------------------------------------------------------------------------
+
+/*---------------------------------------------------v------------------------------------
  HTTP API Event (API Gateway v2)
 
  https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-httpapi.html
@@ -392,11 +446,17 @@ struct HttpApiProperties: SAMResourceProperties, Equatable {
     self.method = method
     self.path = path
   }
+
   let method: HttpVerb?
   let path: String?
+  enum CodingKeys: String, CodingKey {
+    case method = "Method"
+    case path = "Path"
+  }
 }
 
-public enum HttpVerb: String, Encodable {
+// TODO: should use HTTP Types instead
+public enum HttpVerb: String, Encodable, Sendable {
   case GET
   case POST
   case PUT
@@ -405,6 +465,7 @@ public enum HttpVerb: String, Encodable {
 }
 
 // MARK: SQS event definition
+
 /*---------------------------------------------------------------------------------------
  SQS Event
 
@@ -414,7 +475,6 @@ public enum HttpVerb: String, Encodable {
 /// Represents SQS queue properties.
 /// When `queue` name  is a shorthand YAML reference to another resource, like `!GetAtt`, it splits the shorthand into proper YAML to make the parser happy
 public struct SQSEventProperties: SAMResourceProperties, Equatable {
-
   public var reference: Reference
   public var batchSize: Int
   public var enabled: Bool
@@ -424,18 +484,19 @@ public struct SQSEventProperties: SAMResourceProperties, Equatable {
     batchSize: Int,
     enabled: Bool
   ) {
-
     // when the ref is an ARN, leave it as it, otherwise, create a queue resource and pass a reference to it
     if let arn = Arn(ref) {
       self.reference = .arn(arn)
     } else {
       let logicalName = Resource<EventSourceType>.logicalName(
         resourceType: "Queue",
-        resourceName: ref)
+        resourceName: ref
+      )
       let queue = Resource<ResourceType>(
         type: .queue,
         properties: SQSResourceProperties(queueName: ref),
-        name: logicalName)
+        name: logicalName
+      )
       self.reference = .resource(queue)
     }
     self.batchSize = batchSize
@@ -447,7 +508,6 @@ public struct SQSEventProperties: SAMResourceProperties, Equatable {
     batchSize: Int,
     enabled: Bool
   ) {
-
     self.reference = .resource(queue)
     self.batchSize = batchSize
     self.enabled = enabled
@@ -455,12 +515,13 @@ public struct SQSEventProperties: SAMResourceProperties, Equatable {
 
   enum CodingKeys: String, CodingKey {
     case reference = "Queue"
-    case batchSize
-    case enabled
+    case batchSize = "BatchSize"
+    case enabled = "Enabled"
   }
 }
 
 // MARK: SQS queue resource definition
+
 /*---------------------------------------------------------------------------------------
  SQS Queue Resource
 
@@ -470,9 +531,13 @@ public struct SQSEventProperties: SAMResourceProperties, Equatable {
 
 public struct SQSResourceProperties: SAMResourceProperties {
   public let queueName: String
+  enum CodingKeys: String, CodingKey {
+    case queueName = "QueueName"
+  }
 }
 
 // MARK: Simple DynamoDB table resource definition
+
 /*---------------------------------------------------------------------------------------
  Simple DynamoDB Table Resource
 
@@ -483,20 +548,35 @@ public struct SQSResourceProperties: SAMResourceProperties {
 public struct SimpleTableProperties: SAMResourceProperties {
   let primaryKey: PrimaryKey
   let tableName: String
-  var provisionedThroughput: ProvisionedThroughput? = nil
+  var provisionedThroughput: ProvisionedThroughput?
   struct PrimaryKey: Codable {
     let name: String
     let type: String
+    public enum CodingKeys: String, CodingKey {
+      case name = "Name"
+      case type = "Type"
+    }
   }
+
   struct ProvisionedThroughput: Codable {
     let readCapacityUnits: Int
     let writeCapacityUnits: Int
+    enum CodingKeys: String, CodingKey {
+      case readCapacityUnits = "ReadCapacityUnits"
+      case writeCapacityUnits = "WriteCapacityUnits"
+    }
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case primaryKey = "PrimaryKey"
+    case tableName = "TableName"
+    case provisionedThroughput = "ProvisionedThroughput"
   }
 }
 
 // MARK: Utils
 
-public struct Arn: Encodable {
+public struct Arn: Encodable, Sendable {
   public let arn: String
 
   // Arn regex from https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-eventsourcemapping.html#cfn-lambda-eventsourcemapping-eventsourcearn
@@ -504,18 +584,20 @@ public struct Arn: Encodable {
     #"arn:(aws[a-zA-Z0-9-]*):([a-zA-Z0-9\-]+):([a-z]{2}(-gov)?-[a-z]+-\d{1})?:(\d{12})?:(.*)"#
 
   public init?(_ arn: String) {
-    if arn.range(of: arnRegex, options: .regularExpression) != nil {
+    if arn.range(of: self.arnRegex, options: .regularExpression) != nil {
       self.arn = arn
     } else {
       return nil
     }
   }
+
   public func encode(to encoder: Encoder) throws {
     var container = encoder.singleValueContainer()
     try container.encode(self.arn)
   }
+
   public func service() -> String? {
-    var result: String? = nil
+    var result: String?
 
     if #available(macOS 13, *) {
       let regex = try! Regex(arnRegex)
@@ -536,7 +618,7 @@ public struct Arn: Encodable {
   }
 }
 
-public enum Reference: Encodable, Equatable {
+public enum Reference: Encodable, Equatable, Sendable {
   case arn(Arn)
   case resource(Resource<ResourceType>)
 
@@ -557,20 +639,19 @@ public enum Reference: Encodable, Equatable {
   public static func == (lhs: Reference, rhs: Reference) -> Bool {
     switch lhs {
     case .arn(let lArn):
-      if case let .arn(rArn) = rhs {
+      if case .arn(let rArn) = rhs {
         return lArn.arn == rArn.arn
       } else {
         return false
       }
     case .resource(let lResource):
-      if case let .resource(rResource) = lhs {
+      if case .resource(let rResource) = lhs {
         return lResource == rResource
       } else {
         return false
       }
     }
   }
-
 }
 
 extension Resource {
@@ -579,9 +660,9 @@ extension Resource {
   // remove hyphen
   // camel case
   static func logicalName(resourceType: String, resourceName: String) -> String {
-    let noSpaceName = resourceName.split(separator: " ").map { $0.capitalized }.joined(
+    let noSpaceName = resourceName.split(separator: " ").map(\.capitalized).joined(
       separator: "")
-    let noHyphenName = noSpaceName.split(separator: "-").map { $0.capitalized }.joined(
+    let noHyphenName = noSpaceName.split(separator: "-").map(\.capitalized).joined(
       separator: "")
     return resourceType.capitalized + noHyphenName
   }
