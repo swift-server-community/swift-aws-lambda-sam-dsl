@@ -60,7 +60,9 @@ public struct DeploymentDescriptorGenerator {
 
     // MARK: - generateWithSwiftOpenapi
 
-    public func generateWithSwiftOpenAPI() {}
+    public func generateWithSwiftOpenAPI() {
+       
+    }
 
     // MARK: - generateWithSwiftSyntax
 
