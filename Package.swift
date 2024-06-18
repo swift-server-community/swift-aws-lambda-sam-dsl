@@ -21,11 +21,6 @@ let package = Package(
             name: "AWSLambdaDeploymentDescriptor",
             path: "Sources/AWSLambdaDeploymentDescriptor"
         ),
-        // SAM Deployment Descriptor Generator
-        .target(
-            name: "AWSLambdaDeploymentDescriptorGenerator",
-            path: "Sources/AWSLambdaDeploymentDescriptorGenerator"
-        ),
         .plugin(
             name: "AWSLambdaDeployer",
             capability: .command(
@@ -44,9 +39,6 @@ let package = Package(
         ),
         .testTarget(
             name: "AWSLambdaDeploymentDescriptorGeneratorTests",
-            dependencies: [
-                .byName(name: "AWSLambdaDeploymentDescriptorGenerator"),
-            ],
             // https://stackoverflow.com/questions/47177036/use-resources-in-unit-tests-with-swift-package-manager
             resources: [
                 .copy("Resources/SimpleJSONSchema.json"),
