@@ -396,7 +396,7 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
         let expected = [
             Expected.keyOnly(indent: 3, key: "Environment"),
             Expected.keyOnly(indent: 4, key: "Variables"),
-            Expected.keyValue(indent: 4, keyValue: [
+            Expected.keyValue(indent: 5, keyValue: [
                 "TEST2_VAR": "TEST2_VALUE",
                 "TEST1_VAR": "TEST1_VALUE"
             ])

@@ -18,7 +18,7 @@ import Foundation
  Variables:
  LOG_LEVEL: debug
  */
-public struct SAMEnvironmentVariable: Encodable {
+public struct SAMEnvironmentVariable: Encodable, Sendable {
 
   public var variables: [String: SAMEnvironmentVariableValue] = [:]
   public init() {}
@@ -61,8 +61,8 @@ public struct SAMEnvironmentVariable: Encodable {
     variables[key] = .array(value: ["Ref": value.name])
   }
 
-  enum CodingKeys: CodingKey {
-    case variables
+  enum CodingKeys: String, CodingKey {
+    case variables = "Variables"
   }
 
   public func encode(to encoder: Encoder) throws {
@@ -88,7 +88,7 @@ public struct SAMEnvironmentVariable: Encodable {
     }
   }
 
-  public enum SAMEnvironmentVariableValue {
+    public enum SAMEnvironmentVariableValue: Sendable {
     // KEY: VALUE
     case string(value: String)
 

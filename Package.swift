@@ -31,6 +31,13 @@ let package = Package(
             swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
         ),
 
+        // JSON Schema Generator
+        .target(
+            name: "AWSLambdaDeploymentDescriptorGenerator",
+            path: "Sources/AWSLambdaDeploymentDescriptorGenerator",
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
+        ),
+
         // a test command line that uses Mustache as template library
         .executableTarget(
             name: "AWSLambdaDeploymentDescriptorGeneratorMustache",
@@ -67,6 +74,7 @@ let package = Package(
             exclude: ["Resources"],
             resources: [
               .copy("openapi.yaml"),
+              .copy("openapi.simple.yaml"),
               .copy("openapi-generator-config.yaml")
             ],
             swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")],
@@ -104,6 +112,10 @@ let package = Package(
             dependencies: [
                 .byName(name: "AWSLambdaDeploymentDescriptorGenerator"),
             ],
+            // https://stackoverflow.com/questions/47177036/use-resources-in-unit-tests-with-swift-package-manager
+            resources: [
+                .copy("Resources/SimpleJSONSchema.json"),
+                .copy("Resources/SAMJSONSchema.json")],
             swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
         ),
     ]
