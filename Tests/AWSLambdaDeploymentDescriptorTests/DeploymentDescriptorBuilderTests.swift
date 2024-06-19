@@ -103,7 +103,7 @@ final class DeploymentDescriptorBuilderTests: DeploymentDescriptorBaseTest {
         let codeUri = "/path/does/not/exist/lambda.zip"
         
         // then
-        XCTAssertThrowsError(try Function.packagePath(name: name, codeUri: codeUri))
+        XCTAssertThrowsError(try Function.packagePath(name: name, codeUri: codeUri, commandLine: CommandLineArgsFinder()))
     }
     
     // check wether the builder detects existing packages
@@ -114,14 +114,23 @@ final class DeploymentDescriptorBuilderTests: DeploymentDescriptorBaseTest {
         let (tempDir, tempFile) =  try prepareTemporaryPackageFile()
         let expected = Expected.keyValue(indent: 3, keyValue: ["CodeUri": tempFile])
         
-        CommandLine.arguments = ["test", "--archive-path", tempDir]
+        struct MockedCommandLineArgs: CommandLineArgsFinderProtocol {
+            let tempDir: String
+            public func args() -> [String] {
+                ["test", "--archive-path", tempDir]
+            }
+        }
+
+        let mockCommandLine = MockedCommandLineArgs(tempDir: tempDir)
         
         let testDeployment = MockDeploymentDescriptorBuilder(
             withFunction: true,
             architecture: .arm64,
             codeURI: self.codeURI,
             eventSource: HttpApi().resource(),
-            environmentVariable: ["NAME1": "VALUE1"] )
+            environmentVariable: ["NAME1": "VALUE1"],
+            commandLine: mockCommandLine
+        )
         
         XCTAssertTrue(self.generateAndTestDeploymentDescriptor(deployment: testDeployment,
                                                                expected: expected))

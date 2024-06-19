@@ -115,10 +115,11 @@ public struct Function: BuilderResource {
     codeURI: String? = nil,
     eventSources: [Resource<EventSourceType>] = [],
     environment: [String: String] = [:],
-    description: String? = nil
+    description: String? = nil,
+    commandLineArgs: CommandLineArgsFinderProtocol = CommandLineArgsFinder()
   ) {
     var props = ServerlessFunctionProperties(
-      codeUri: try! Function.packagePath(name: name, codeUri: codeURI),
+      codeUri: try? Function.packagePath(name: name, codeUri: codeURI, commandLine: commandLineArgs),
       architecture: architecture,
       eventSources: eventSources,
       environment: environment.isEmpty ? nil : SAMEnvironmentVariable(environment)
@@ -131,19 +132,8 @@ public struct Function: BuilderResource {
   public init(
     name: String,
     architecture: ServerlessFunctionProperties.Architectures = .defaultArchitecture(),
-    codeURI: String? = nil
-  ) {
-    let props = ServerlessFunctionProperties(
-      codeUri: try! Function.packagePath(name: name, codeUri: codeURI),
-      architecture: architecture
-    )
-    self.init(name, properties: props)
-  }
-
-  public init(
-    name: String,
-    architecture: ServerlessFunctionProperties.Architectures = .defaultArchitecture(),
     codeURI: String? = nil,
+    commandLineArgs: CommandLineArgsFinderProtocol = CommandLineArgsFinder(),
     @FunctionBuilder _ builder: () -> (String?, EventSources, [String: String])
   ) {
     let (description, eventSources, environmentVariables) = builder()
@@ -171,8 +161,7 @@ public struct Function: BuilderResource {
   // 1. the --archive-path arg
   // 2. the developer supplied value in Function() definition
   // 3. a default value
-  // func is public for testability
-  internal static func packagePath(name: String, codeUri: String?) throws -> String {
+    internal static func packagePath(name: String, codeUri: String?, commandLine: CommandLineArgsFinderProtocol) throws -> String {
     // propose a default path unless the --archive-path argument was used
     // --archive-path argument value must match the value given to the archive plugin --output-path argument
     var lambdaPackage =
@@ -180,7 +169,7 @@ public struct Function: BuilderResource {
     if let path = codeUri {
       lambdaPackage = path
     }
-    let args = CommandLine.arguments
+        let args = commandLine.args()
     if let optIdx = args.firstIndex(of: "--archive-path") {
       if args.count >= optIdx + 1 {
         let archiveArg = args[optIdx + 1]
@@ -510,6 +499,15 @@ public struct Function: BuilderResource {
   }
 
   private func name() -> String { self._underlying.name }
+}
+
+// for testing
+public protocol CommandLineArgsFinderProtocol {
+    func args() -> [String]
+}
+public struct CommandLineArgsFinder: CommandLineArgsFinderProtocol {
+    public init() {}
+    public func args() -> [String]{ CommandLine.arguments }
 }
 
 // MARK: Url Config Cors DSL code
