@@ -72,11 +72,11 @@ let package = Package(
   ]
 )
 
-// // for CI to test the local version of the library
-// if ProcessInfo.processInfo.environment["LAMBDA_USE_LOCAL_DEPS"] != nil {
-//     package.dependencies = [
-//         // use local package in ../..
-//         .package(url: "../../../swift-aws-lambda-runtime", branch: "main"), 
-//         .package(url: "https://github.com/swift-server/swift-aws-lambda-events.git", branch: "main")
-//     ]
-// }
+// for CI to test the local version of the library
+if ProcessInfo.processInfo.environment["LAMBDA_USE_LOCAL_DEPS"] != nil {
+    package.dependencies = [
+        // use local package in ../..
+        .package(name: "swift-aws-lambda-runtime", path: "../../../swift-aws-lambda-runtime"),
+        .package(url: "https://github.com/swift-server/swift-aws-lambda-events.git", branch: "main")
+    ]
+}
