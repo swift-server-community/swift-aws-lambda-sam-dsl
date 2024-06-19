@@ -27,8 +27,11 @@ struct AWSLambdaDeployer: CommandPlugin {
         }
         
         // gather file paths
+        #if swift(>=6.0)
+        let samDeploymentDescriptorFilePath = "\(context.package.directoryURL)/template.yaml"
+        #else
         let samDeploymentDescriptorFilePath = "\(context.package.directory)/template.yaml"
-        
+        #endif
         let swiftExecutablePath = try self.findExecutable(context: context,
                                                           executableName: "swift",
                                                           helpMessage: "Is Swift or Xcode installed? (https://www.swift.org/getting-started)",
@@ -49,13 +52,30 @@ struct AWSLambdaDeployer: CommandPlugin {
                                                      verboseLogging: configuration.verboseLogging)
         
         // build the shared lib to compile the deployment descriptor
-        try self.compileSharedLibrary(projectDirectory: context.package.directory,
+        #if swift(>=6.0)
+        try self.compileSharedLibrary(projectDirectory: context.package.directoryURL,
                                               buildConfiguration: configuration.buildConfiguration,
                                               swiftExecutable: swiftExecutablePath,
                                               verboseLogging: configuration.verboseLogging)
+        #else
+        try self.compileSharedLibrary(projectDirectory: URL(fileURLWithPath:context.package.directory.string),
+                                              buildConfiguration: configuration.buildConfiguration,
+                                              swiftExecutable: swiftExecutablePath,
+                                              verboseLogging: configuration.verboseLogging)
+        #endif
 
         // generate the deployment descriptor
-        try self.generateDeploymentDescriptor(projectDirectory: context.package.directory,
+        #if swift(>=6.0)
+        try self.generateDeploymentDescriptor(projectDirectory: context.package.directoryURL,
+                                              buildConfiguration: configuration.buildConfiguration,
+                                              swiftExecutable: swiftExecutablePath,
+                                              shellExecutable: shellExecutablePath,
+                                              samDeploymentDescriptorFilePath: samDeploymentDescriptorFilePath,
+                                              archivePath: configuration.archiveDirectory,
+                                              force: configuration.force,
+                                              verboseLogging: configuration.verboseLogging)        
+        #else
+        try self.generateDeploymentDescriptor(projectDirectory: URL(fileURLWithPath: context.package.directory.string),
                                               buildConfiguration: configuration.buildConfiguration,
                                               swiftExecutable: swiftExecutablePath,
                                               shellExecutable: shellExecutablePath,
@@ -63,17 +83,25 @@ struct AWSLambdaDeployer: CommandPlugin {
                                               archivePath: configuration.archiveDirectory,
                                               force: configuration.force,
                                               verboseLogging: configuration.verboseLogging)
-        
-                
+        #endif
+
         // check if there is a samconfig.toml file.
         // when there is no file, generate one with default values and values collected from params
-        try self.checkOrCreateSAMConfigFile(projetDirectory: context.package.directory,
+        #if swift(>=6.0)
+        try self.checkOrCreateSAMConfigFile(projetDirectory: context.package.directoryURL,
                                             buildConfiguration: configuration.buildConfiguration,
                                             region: awsRegion,
                                             stackName: configuration.stackName,
                                             force: configuration.force,
                                             verboseLogging: configuration.verboseLogging)
-        
+        #else
+        try self.checkOrCreateSAMConfigFile(projetDirectory: URL(fileURLWithPath:context.package.directory.string),
+                                            buildConfiguration: configuration.buildConfiguration,
+                                            region: awsRegion,
+                                            stackName: configuration.stackName,
+                                            force: configuration.force,
+                                            verboseLogging: configuration.verboseLogging)
+        #endif        
         // validate the template
         try self.validate(samExecutablePath: samExecutablePath,
                           samDeploymentDescriptorFilePath: samDeploymentDescriptorFilePath,
@@ -97,9 +125,10 @@ struct AWSLambdaDeployer: CommandPlugin {
         }
     }
 
-    private func compileSharedLibrary(projectDirectory: Path,
+
+    private func compileSharedLibrary(projectDirectory: URL,
                                       buildConfiguration: PackageManager.BuildConfiguration,
-                                      swiftExecutable: Path,
+                                      swiftExecutable: URL,
                                       verboseLogging: Bool) throws {
         print("-------------------------------------------------------------------------")
         print("Compile shared library")
@@ -116,10 +145,10 @@ struct AWSLambdaDeployer: CommandPlugin {
 
     }
 
-    private func generateDeploymentDescriptor(projectDirectory: Path,
+    private func generateDeploymentDescriptor(projectDirectory: URL,
                                               buildConfiguration: PackageManager.BuildConfiguration,
-                                              swiftExecutable: Path,
-                                              shellExecutable: Path,
+                                              swiftExecutable: URL,
+                                              shellExecutable: URL,
                                               samDeploymentDescriptorFilePath: String,
                                               archivePath: String?,
                                               force: Bool,
@@ -144,7 +173,7 @@ struct AWSLambdaDeployer: CommandPlugin {
         
         do {
             var cmd = [
-                "\"\(swiftExecutable.string)\"",
+                "\"\(swiftExecutable.absoluteString)\"",
                 "-L \(projectDirectory)/.build/\(buildConfiguration)/",
                 "-I \(projectDirectory)/.build/\(buildConfiguration)/",
                 "-l\(sharedLibraryName)",
@@ -211,23 +240,27 @@ struct AWSLambdaDeployer: CommandPlugin {
     private func findExecutable(context: PluginContext,
                                 executableName: String,
                                 helpMessage: String,
-                                verboseLogging: Bool) throws -> Path {
+                                verboseLogging: Bool) throws -> URL {
         
         guard let executable = try? context.tool(named: executableName) else {
             print("Can not find `\(executableName)` executable.")
             print(helpMessage)
             throw DeployerPluginError.toolNotFound(executableName)
         }
-        
+#if swift(>=6.0)
+        let url = executable.url
+#else
+        let url = URL(fileURLWithPath: executable.path.string)
+#endif
         if verboseLogging {
             print("-------------------------------------------------------------------------")
-            print("\(executableName) executable : \(executable.path)")
+            print("\(executableName) executable : \(url)")
             print("-------------------------------------------------------------------------")
         }
-        return executable.path
+        return url
     }
     
-    private func validate(samExecutablePath: Path,
+    private func validate(samExecutablePath: URL,
                           samDeploymentDescriptorFilePath: String,
                           verboseLogging: Bool) throws {
         
@@ -254,7 +287,7 @@ struct AWSLambdaDeployer: CommandPlugin {
         }
     }
     
-    private func checkOrCreateSAMConfigFile(projetDirectory: Path,
+    private func checkOrCreateSAMConfigFile(projetDirectory: URL,
                                             buildConfiguration: PackageManager.BuildConfiguration,
                                             region: String,
                                             stackName: String,
@@ -288,7 +321,7 @@ image_repositories = []
         }
     }
     
-    private func deploy(samExecutablePath: Path,
+    private func deploy(samExecutablePath: URL,
                         buildConfiguration: PackageManager.BuildConfiguration,
                         verboseLogging: Bool) throws {
         
@@ -323,7 +356,7 @@ image_repositories = []
         }
     }
     
-    private func listEndpoints(samExecutablePath: Path,
+    private func listEndpoints(samExecutablePath: URL,
                                samDeploymentDescriptorFilePath: String,
                                stackName: String,
                                verboseLogging: Bool) throws  -> String {
@@ -548,7 +581,14 @@ private struct Configuration: CustomStringConvertible {
     }
     
     var description: String {
-    """
+#if swift(>=6.0)        
+        let pluginDirectoryURL = self.context.pluginWorkDirectoryURL
+        let directoryURL = self.context.package.directoryURL
+#else
+        let pluginDirectoryURL = URL(fileURLWithPath: self.context.pluginWorkDirectory.string)
+        let directoryURL = URL(fileURLWithPath: self.context.package.directory.string)
+#endif
+    return """
     {
       verbose: \(self.verboseLogging)
       force: \(self.force)
@@ -558,8 +598,8 @@ private struct Configuration: CustomStringConvertible {
       archiveDirectory: \(self.archiveDirectory ?? "none provided on command line")
       stackName: \(self.stackName)
       region: \(self.region ?? "none provided on command line")
-      Plugin directory: \(self.context.pluginWorkDirectory)
-      Project directory: \(self.context.package.directory)
+      Plugin directory: \(pluginDirectoryURL)
+      Project directory: \(directoryURL)
     }
     """
     }

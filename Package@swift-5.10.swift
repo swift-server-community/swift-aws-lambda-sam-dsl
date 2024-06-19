@@ -1,4 +1,4 @@
-// swift-tools-version:6.0
+// swift-tools-version:5.10
 
 import PackageDescription
 
@@ -22,7 +22,7 @@ let package = Package(
             name: "AWSLambdaDeploymentDescriptor",
             dependencies: [ .product(name: "Yams", package: "Yams")],
             path: "Sources/AWSLambdaDeploymentDescriptor",
-            swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
+           swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
         ),
         .plugin(
             name: "AWSLambdaDeployer",
@@ -39,7 +39,7 @@ let package = Package(
             dependencies: [
                 .byName(name: "AWSLambdaDeploymentDescriptor"),
             ],
-            swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
+           swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
         ),
     ]
 )

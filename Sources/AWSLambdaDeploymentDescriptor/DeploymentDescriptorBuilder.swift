@@ -180,8 +180,6 @@ public struct Function: BuilderResource {
     if let path = codeUri {
       lambdaPackage = path
     }
-    // this is called from the main thread in the context of a command-line tool only
-    nonisolated(unsafe)
     let args = CommandLine.arguments
     if let optIdx = args.firstIndex(of: "--archive-path") {
       if args.count >= optIdx + 1 {
