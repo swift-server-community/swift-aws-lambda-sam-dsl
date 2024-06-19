@@ -19,19 +19,21 @@ import PackagePlugin
 struct Utils {
     @discardableResult
     static func execute(
-        executable: Path,
+        executable: URL,
         arguments: [String],
-        customWorkingDirectory: Path? = .none,
+        customWorkingDirectory: URL? = nil,
         logLevel: ProcessLogLevel
     ) throws -> String {
         if logLevel >= .debug {
-            print("\(executable.string) \(arguments.joined(separator: " "))")
+            print("\(executable.absoluteString) \(arguments.joined(separator: " "))")
         }
 
-        var output = ""
+        // this shared global variable is safe because we're mutating it in a dispatch group
+        // https://developer.apple.com/documentation/foundation/process/1408746-terminationhandler
+        nonisolated(unsafe) var output = ""
         let outputSync = DispatchGroup()
-        let outputQueue = DispatchQueue(label: "AWSLambdaPackager.output")
-        let outputHandler = { (data: Data?) in
+        let outputQueue = DispatchQueue(label: "AWSLambdaPlugin.output")
+        let outputHandler = { @Sendable (data: Data?) in
             dispatchPrecondition(condition: .onQueue(outputQueue))
 
             outputSync.enter()
@@ -54,17 +56,21 @@ struct Utils {
         }
 
         let pipe = Pipe()
-        pipe.fileHandleForReading.readabilityHandler = { fileHandle in outputQueue.async { outputHandler(fileHandle.availableData) } }
+        pipe.fileHandleForReading.readabilityHandler = { fileHandle in 
+            outputQueue.async {
+                outputHandler(fileHandle.availableData)
+            }
+        }
 
         let process = Process()
         process.standardOutput = pipe
         process.standardError = pipe
-        process.executableURL = URL(fileURLWithPath: executable.string)
+        process.executableURL = executable
         process.arguments = arguments
-        if let workingDirectory = customWorkingDirectory {
-            process.currentDirectoryURL = URL(fileURLWithPath: workingDirectory.string)
+        if let customWorkingDirectory {
+            process.currentDirectoryURL = customWorkingDirectory
         }
-        process.terminationHandler = { _ in
+        process.terminationHandler = { _  in
             outputQueue.async {
                 outputHandler(try? pipe.fileHandleForReading.readToEnd())
             }
@@ -82,7 +88,7 @@ struct Utils {
                 print(output)
                 fflush(stdout)
             }
-            throw ProcessError.processFailed([executable.string] + arguments, process.terminationStatus, output)
+            throw ProcessError.processFailed([executable.absoluteString] + arguments, process.terminationStatus, output)
         }
 
         return output

@@ -1,4 +1,4 @@
-// swift-tools-version:5.10
+// swift-tools-version:6.0
 
 import PackageDescription
 
@@ -19,21 +19,16 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-syntax.git",  branch: "main"),
         .package(url: "https://github.com/apple/swift-openapi-generator.git", from: "1.2.1"),
         .package(url: "https://github.com/apple/swift-openapi-runtime.git", from: "1.4.0"),
+        .package(url: "https://github.com/jpsim/Yams.git", from: "5.1.2")
     ],
     targets: [
 
         // SAM Deployment Descriptor DSL
         .target(
             name: "AWSLambdaDeploymentDescriptor",
-            path: "Sources/AWSLambdaDeploymentDescriptor"
-            // swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
-        ),
-
-        // SAM Deployment Descriptor Generator
-        .target(
-            name: "AWSLambdaDeploymentDescriptorGenerator",
-            path: "Sources/AWSLambdaDeploymentDescriptorGenerator"
-            // swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
+            dependencies: [ .product(name: "Yams", package: "Yams")],
+            path: "Sources/AWSLambdaDeploymentDescriptor",
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
         ),
 
         // a test command line that uses Mustache as template library
@@ -109,10 +104,7 @@ let package = Package(
             dependencies: [
                 .byName(name: "AWSLambdaDeploymentDescriptorGenerator"),
             ],
-            // https://stackoverflow.com/questions/47177036/use-resources-in-unit-tests-with-swift-package-manager
-            resources: [
-                .copy("Resources/SimpleJSONSchema.json"),
-                .copy("Resources/SAMJSONSchema.json")]
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
         ),
     ]
 )

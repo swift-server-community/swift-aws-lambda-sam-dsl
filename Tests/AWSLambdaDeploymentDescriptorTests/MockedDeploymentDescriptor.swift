@@ -80,7 +80,9 @@ struct MockDeploymentDescriptorBuilder: MockDeploymentDescriptorBehavior {
          architecture: ServerlessFunctionProperties.Architectures = .defaultArchitecture(),
          codeURI: String,
          eventSource: Resource<EventSourceType>,
-         environmentVariable: [String: String]) {
+         environmentVariable: [String: String],
+         commandLine: CommandLineArgsFinderProtocol = CommandLineArgsFinder()
+    ) {
         if withFunction {
 
             self.deploymentDescriptor = DeploymentDescriptor {
@@ -88,7 +90,8 @@ struct MockDeploymentDescriptorBuilder: MockDeploymentDescriptorBehavior {
 
                 Function(name: MockDeploymentDescriptorBuilder.functionName,
                          architecture: architecture,
-                         codeURI: codeURI) {
+                         codeURI: codeURI,
+                         commandLineArgs: commandLine) {
                     EventSources {
                         eventSource
                     }

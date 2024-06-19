@@ -103,7 +103,7 @@ final class DeploymentDescriptorBuilderTests: DeploymentDescriptorBaseTest {
         let codeUri = "/path/does/not/exist/lambda.zip"
         
         // then
-        XCTAssertThrowsError(try Function.packagePath(name: name, codeUri: codeUri))
+        XCTAssertThrowsError(try Function.packagePath(name: name, codeUri: codeUri, commandLine: CommandLineArgsFinder()))
     }
     
     // check wether the builder detects existing packages
@@ -114,14 +114,23 @@ final class DeploymentDescriptorBuilderTests: DeploymentDescriptorBaseTest {
         let (tempDir, tempFile) =  try prepareTemporaryPackageFile()
         let expected = Expected.keyValue(indent: 3, keyValue: ["CodeUri": tempFile])
         
-        CommandLine.arguments = ["test", "--archive-path", tempDir]
+        struct MockedCommandLineArgs: CommandLineArgsFinderProtocol {
+            let tempDir: String
+            public func args() -> [String] {
+                ["test", "--archive-path", tempDir]
+            }
+        }
+
+        let mockCommandLine = MockedCommandLineArgs(tempDir: tempDir)
         
         let testDeployment = MockDeploymentDescriptorBuilder(
             withFunction: true,
             architecture: .arm64,
             codeURI: self.codeURI,
             eventSource: HttpApi().resource(),
-            environmentVariable: ["NAME1": "VALUE1"] )
+            environmentVariable: ["NAME1": "VALUE1"],
+            commandLine: mockCommandLine
+        )
         
         XCTAssertTrue(self.generateAndTestDeploymentDescriptor(deployment: testDeployment,
                                                                expected: expected))
@@ -220,8 +229,8 @@ final class DeploymentDescriptorBuilderTests: DeploymentDescriptorBaseTest {
             Expected.keyValue(indent: 6, keyValue: ["Type": "SQS"]),
             Expected.keyOnly(indent: 6, key: "Destination"),
             Expected.keyOnly(indent: 7, key: "Fn::GetAtt"),
-            Expected.arrayKey(indent: 8, key: "queue1"),
-            Expected.arrayKey(indent: 8, key: "Arn")
+            Expected.arrayKey(indent: 7, key: "queue1"),
+            Expected.arrayKey(indent: 7, key: "Arn")
         ]
         
         // when
@@ -249,8 +258,8 @@ final class DeploymentDescriptorBuilderTests: DeploymentDescriptorBaseTest {
             Expected.keyValue(indent: 6, keyValue: ["Type": "SQS"]),
             Expected.keyOnly(indent: 6, key: "Destination"),
             Expected.keyOnly(indent: 7, key: "Fn::GetAtt"),
-            Expected.arrayKey(indent: 8, key: "queue1"),
-            Expected.arrayKey(indent: 8, key: "Arn")
+            Expected.arrayKey(indent: 7, key: "queue1"),
+            Expected.arrayKey(indent: 7, key: "Arn")
         ]
         
         // when
@@ -277,8 +286,8 @@ final class DeploymentDescriptorBuilderTests: DeploymentDescriptorBaseTest {
             Expected.keyValue(indent: 6, keyValue: ["Type": "Lambda"]),
             Expected.keyOnly(indent: 6, key: "Destination"),
             Expected.keyOnly(indent: 7, key: "Fn::GetAtt"),
-            Expected.arrayKey(indent: 8, key: functionName),
-            Expected.arrayKey(indent: 8, key: "Arn")
+            Expected.arrayKey(indent: 7, key: functionName),
+            Expected.arrayKey(indent: 7, key: "Arn")
         ]
         
         // when
@@ -305,17 +314,17 @@ final class DeploymentDescriptorBuilderTests: DeploymentDescriptorBaseTest {
             Expected.keyValue(indent: 5, keyValue: ["MaxAge":"99",
                                                     "AllowCredentials" : "true"]),
             Expected.keyOnly(indent: 5, key: "AllowHeaders"),
-            Expected.arrayKey(indent: 6, key: "header1"),
-            Expected.arrayKey(indent: 6, key: "header2"),
+            Expected.arrayKey(indent: 5, key: "header1"),
+            Expected.arrayKey(indent: 5, key: "header2"),
             Expected.keyOnly(indent: 5, key: "AllowMethods"),
-            Expected.arrayKey(indent: 6, key: "GET"),
-            Expected.arrayKey(indent: 6, key: "POST"),
+            Expected.arrayKey(indent: 5, key: "GET"),
+            Expected.arrayKey(indent: 5, key: "POST"),
             Expected.keyOnly(indent: 5, key: "AllowOrigins"),
-            Expected.arrayKey(indent: 6, key: "origin1"),
-            Expected.arrayKey(indent: 6, key: "origin2"),
+            Expected.arrayKey(indent: 5, key: "origin1"),
+            Expected.arrayKey(indent: 5, key: "origin2"),
             Expected.keyOnly(indent: 5, key: "ExposeHeaders"),
-            Expected.arrayKey(indent: 6, key: "header1"),
-            Expected.arrayKey(indent: 6, key: "header2"),
+            Expected.arrayKey(indent: 5, key: "header1"),
+            Expected.arrayKey(indent: 5, key: "header2"),
         ]
         
         // when
@@ -379,11 +388,10 @@ final class DeploymentDescriptorBuilderTests: DeploymentDescriptorBaseTest {
         let mount2 = "/mnt/path2"
         let expected = [
             Expected.keyOnly(indent: 3, key: "FileSystemConfigs"),
-            Expected.arrayKey(indent: 4, key: ""),
-            Expected.keyValue(indent: 5, keyValue: ["Arn":validArn1,
-                                                    "LocalMountPath" : mount1]),
-            Expected.keyValue(indent: 5, keyValue: ["Arn":validArn2,
-                                                    "LocalMountPath" : mount2])
+            Expected.arrayKey(indent: 3, key: "Arn", value: validArn1),
+            Expected.keyValue(indent: 4, keyValue: ["LocalMountPath" : mount1]),
+            Expected.arrayKey(indent: 3, key: "Arn", value: validArn2),
+            Expected.keyValue(indent: 4, keyValue: ["LocalMountPath" : mount2])
         ]
         
         // when

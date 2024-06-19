@@ -16,7 +16,6 @@ import CryptoKit
 import Foundation
 
 class FileDigest {
-
   public static func hex(from filePath: String?) -> String? {
     guard let fp = filePath else {
       return nil
@@ -36,7 +35,7 @@ class FileDigest {
     guard let inputStream = InputStream(fileAtPath: path) else {
       throw InputStreamError.createFailed(path)
     }
-    return try update(inputStream: inputStream)
+    return try self.update(inputStream: inputStream)
   }
 
   private func update(inputStream: InputStream) throws -> FileDigest {
@@ -61,12 +60,11 @@ class FileDigest {
 
   private func update(bytes: UnsafeMutablePointer<UInt8>, length: Int) {
     let data = Data(bytes: bytes, count: length)
-    digest.update(data: data)
+    self.digest.update(data: data)
   }
 
   func finalize() -> String {
     let digest = digest.finalize()
     return digest.compactMap { String(format: "%02x", $0) }.joined()
   }
-
 }
