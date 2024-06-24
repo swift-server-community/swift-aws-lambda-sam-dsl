@@ -11,6 +11,9 @@ import HummingbirdMustache
 import Logging
 import SwiftSyntax
 import SwiftSyntaxBuilder
+import OpenAPIRuntime
+import OpenAPIURLSession
+
 
 public protocol DeploymentDescriptorGeneratorCommand {
     var inputFile: String? { get }
@@ -60,9 +63,7 @@ public struct DeploymentDescriptorGenerator {
 
     // MARK: - generateWithSwiftOpenapi
 
-    public func generateWithSwiftOpenAPI() {
-       
-    }
+    public func generateWithSwiftOpenAPI() {}
 
     // MARK: - generateWithSwiftSyntax
 

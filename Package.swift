@@ -1,4 +1,4 @@
-// swift-tools-version:5.9
+// swift-tools-version:5.10
 
 import PackageDescription
 
@@ -25,6 +25,9 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-log.git", .upToNextMajor(from: "1.4.2")),
         .package(url: "https://github.com/hummingbird-project/hummingbird-mustache.git", from: "1.0.3"),
         .package(url: "https://github.com/apple/swift-syntax.git", from: "510.0.2"),
+        .package(url: "https://github.com/apple/swift-openapi-generator", from: "1.0.0"),
+        .package(url: "https://github.com/apple/swift-openapi-runtime", from: "1.0.0"),
+        .package(url: "https://github.com/apple/swift-openapi-urlsession", from: "1.0.0"),
     ],
     targets: [
         .target(
@@ -45,11 +48,17 @@ let package = Package(
             .product(name: "HummingbirdMustache", package: "hummingbird-mustache"),
             .product(name: "SwiftSyntax", package: "swift-syntax"),
             .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
+            .product(name: "OpenAPIRuntime", package: "swift-openapi-runtime"),
+            .product(name: "OpenAPIURLSession", package: "swift-openapi-urlsession"),
         ],
         resources: [
             .process("Resources/SamTranslatorSchema.json"),
             .process("Resources/TypeSchemaTranslator.json"),
-        ]),
+            .process("Resources/openapi.yaml"),
+            .process("Resources/openapi-generator-config.yaml"),
+        ],
+                plugins: [.plugin(name: "OpenAPIGenerator", package: "swift-openapi-generator")]
+        ),
         .plugin(
             name: "AWSLambdaDeployer",
             capability: .command(
