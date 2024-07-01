@@ -21,12 +21,11 @@ struct HttpApiLambda: LambdaHandler {
     init() {}
     init(context: LambdaInitializationContext) async throws {
         context.logger.info(
-            "Log Level env var : \(ProcessInfo.processInfo.environment["LOG_LEVEL"] ?? "info" )")
+            "Log Level env var : \(ProcessInfo.processInfo.environment["LOG_LEVEL"] ?? "info")")
     }
 
     // the return value must be either APIGatewayV2Response or any Encodable struct
     func handle(_ event: APIGatewayV2Request, context: AWSLambdaRuntimeCore.LambdaContext) async throws -> APIGatewayV2Response {
-
         var header = HTTPHeaders()
         do {
             context.logger.debug("HTTP API Message received")
@@ -46,7 +45,6 @@ struct HttpApiLambda: LambdaHandler {
             // when the input event is malformed, this function is not even called
             header["content-type"] = "text/plain"
             return APIGatewayV2Response(statusCode: .badRequest, headers: header, body: "\(error.localizedDescription)")
-
         }
     }
 }
