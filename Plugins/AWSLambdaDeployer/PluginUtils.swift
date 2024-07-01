@@ -56,7 +56,7 @@ struct Utils {
         }
 
         let pipe = Pipe()
-        pipe.fileHandleForReading.readabilityHandler = { fileHandle in 
+        pipe.fileHandleForReading.readabilityHandler = { fileHandle in
             outputQueue.async {
                 outputHandler(fileHandle.availableData)
             }
@@ -70,7 +70,7 @@ struct Utils {
         if let customWorkingDirectory {
             process.currentDirectoryURL = customWorkingDirectory
         }
-        process.terminationHandler = { _  in
+        process.terminationHandler = { _ in
             outputQueue.async {
                 outputHandler(try? pipe.fileHandleForReading.readToEnd())
             }
@@ -104,6 +104,7 @@ struct Utils {
             }
         }
     }
+
     enum ProcessLogLevel: Comparable {
         case silent
         case output(outputIndent: Int)

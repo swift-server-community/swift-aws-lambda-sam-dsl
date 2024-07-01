@@ -17,13 +17,12 @@ import XCTest
 import Yams
 
 class DeploymentDescriptorBaseTest: XCTestCase {
-
     var codeURI: String! = nil
     let fileManager = FileManager.default
     let functionName = MockDeploymentDescriptorBuilder.functionName
 
     override func setUpWithError() throws {
-        // create a fake lambda package zip file 
+        // create a fake lambda package zip file
         let (_, tempFile) = try self.prepareTemporaryPackageFile()
         self.codeURI = tempFile
     }
@@ -33,7 +32,7 @@ class DeploymentDescriptorBaseTest: XCTestCase {
         self.deleteTemporaryPackageFile(self.codeURI)
         self.codeURI = nil
     }
-    
+
     @discardableResult
     func prepareTemporaryPackageFile() throws -> (String, String) {
         let fm = FileManager.default
@@ -66,7 +65,7 @@ class DeploymentDescriptorBaseTest: XCTestCase {
             var value: [String] = []
             switch self {
             case .keyOnly(let i, let k):
-                value = [String(repeating: " ", count: indent * i) +  "\(k):"]
+                value = [String(repeating: " ", count: indent * i) + "\(k):"]
             case .keyValue(let i, let kv):
                 value = kv.keys.map { String(repeating: " ", count: indent * i) + "\($0): \(kv[$0] ?? "")" }
             case .arrayKey(let i, let k, let v):
@@ -79,8 +78,7 @@ class DeploymentDescriptorBaseTest: XCTestCase {
     }
 
     private func testDeploymentDescriptor(deployment: String,
-                                             expected: [Expected]) -> Bool {
-
+                                          expected: [Expected]) -> Bool {
         // given
         let samYAML = deployment
 
@@ -88,47 +86,47 @@ class DeploymentDescriptorBaseTest: XCTestCase {
         let result = expected.allSatisfy {
             // each string in the expected [] is present in the YAML
             var result = true
-            $0.string().forEach {
-                result = result && samYAML.contains( $0 )
+            for item in $0.string() {
+                result = result && samYAML.contains(item)
             }
             return result
         }
 
-       if !result {
+        if !result {
             print("===========")
             print(samYAML)
             print("-----------")
-           print(expected.compactMap { $0.string().joined(separator: "\n") } .joined(separator: "\n"))
+            print(expected.compactMap { $0.string().joined(separator: "\n") }.joined(separator: "\n"))
             print("===========")
-       }
+        }
 
         return result
     }
 
     func generateAndTestDeploymentDescriptor<T: MockDeploymentDescriptorBehavior>(deployment: T,
-                                             expected: [Expected]) -> Bool {
+                                                                                  expected: [Expected]) -> Bool {
         // when
         let samYAML = deployment.toYAML()
 
-        return testDeploymentDescriptor(deployment: samYAML, expected: expected)
+        return self.testDeploymentDescriptor(deployment: samYAML, expected: expected)
     }
 
     func generateAndTestDeploymentDescriptor<T: MockDeploymentDescriptorBehavior>(deployment: T,
-                                             expected: Expected) -> Bool {
-        return generateAndTestDeploymentDescriptor(deployment: deployment, expected: [expected])
+                                                                                  expected: Expected) -> Bool {
+        self.generateAndTestDeploymentDescriptor(deployment: deployment, expected: [expected])
     }
 
     func expectedSAMHeaders() -> [Expected] {
-        return [Expected.keyValue(indent: 0,
-                                 keyValue: [
-                                    "Description": "A SAM template to deploy a Swift Lambda function",
-                                    "AWSTemplateFormatVersion": "'2010-09-09'",
-                                    "Transform": "AWS::Serverless-2016-10-31"])
-                ]
+        [Expected.keyValue(indent: 0,
+                           keyValue: [
+                               "Description": "A SAM template to deploy a Swift Lambda function",
+                               "AWSTemplateFormatVersion": "'2010-09-09'",
+                               "Transform": "AWS::Serverless-2016-10-31",
+                           ])]
     }
 
     func expectedFunction(architecture: String = "arm64") -> [Expected] {
-        return [
+        [
             Expected.keyOnly(indent: 0, key: "Resources"),
             Expected.keyOnly(indent: 1, key: "TestLambda"),
             Expected.keyValue(indent: 2, keyValue: ["Type": "AWS::Serverless::Function"]),
@@ -136,42 +134,41 @@ class DeploymentDescriptorBaseTest: XCTestCase {
             Expected.keyValue(indent: 3, keyValue: [
                 "Handler": "Provided",
                 "CodeUri": self.codeURI,
-                "Runtime": "provided.al2"]),
+                "Runtime": "provided.al2",
+            ]),
             Expected.keyOnly(indent: 3, key: "Architectures"),
-            Expected.arrayKey(indent: 3, key: architecture)
-            ]
-
+            Expected.arrayKey(indent: 3, key: architecture),
+        ]
     }
 
     func expectedEnvironmentVariables() -> [Expected] {
-        return [
+        [
             Expected.keyOnly(indent: 3, key: "Environment"),
             Expected.keyOnly(indent: 4, key: "Variables"),
-            Expected.keyValue(indent: 5, keyValue: ["NAME1": "VALUE1"])
+            Expected.keyValue(indent: 5, keyValue: ["NAME1": "VALUE1"]),
         ]
     }
 
     func expectedHttpAPi() -> [Expected] {
-        return [
+        [
             Expected.keyOnly(indent: 3, key: "Events"),
             Expected.keyOnly(indent: 4, key: "HttpApiEvent"),
-            Expected.keyValue(indent: 5, keyValue: ["Type": "HttpApi"])
-
+            Expected.keyValue(indent: 5, keyValue: ["Type": "HttpApi"]),
         ]
     }
 
     func expectedQueue() -> [Expected] {
-        return [
+        [
             Expected.keyOnly(indent: 0, key: "Resources"),
             Expected.keyOnly(indent: 1, key: "QueueTestQueue"),
             Expected.keyValue(indent: 2, keyValue: ["Type": "AWS::SQS::Queue"]),
             Expected.keyOnly(indent: 2, key: "Properties"),
-            Expected.keyValue(indent: 3, keyValue: ["QueueName": "test-queue"])
+            Expected.keyValue(indent: 3, keyValue: ["QueueName": "test-queue"]),
         ]
     }
 
     func expectedQueueEventSource(source: String) -> [Expected] {
-        return [
+        [
             Expected.keyOnly(indent: 3, key: "Events"),
             Expected.keyOnly(indent: 4, key: "SQSEvent"),
             Expected.keyValue(indent: 5, keyValue: ["Type": "SQS"]),
@@ -181,19 +178,19 @@ class DeploymentDescriptorBaseTest: XCTestCase {
             Expected.keyOnly(indent: 6, key: "Queue"),
             Expected.keyOnly(indent: 7, key: "Fn::GetAtt"),
             Expected.arrayKey(indent: 7, key: source),
-            Expected.arrayKey(indent: 7, key: "Arn")
+            Expected.arrayKey(indent: 7, key: "Arn"),
         ]
     }
 
     func expectedQueueEventSource(arn: String) -> [Expected] {
-        return [
+        [
             Expected.keyOnly(indent: 3, key: "Events"),
             Expected.keyOnly(indent: 4, key: "SQSEvent"),
             Expected.keyValue(indent: 5, keyValue: ["Type": "SQS"]),
             Expected.keyOnly(indent: 5, key: "Properties"),
             Expected.keyValue(indent: 6, keyValue: ["Enabled": "true",
                                                     "BatchSize": "10",
-                                                    "Queue": arn])
+                                                    "Queue": arn]),
         ]
     }
 }

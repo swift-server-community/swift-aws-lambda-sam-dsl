@@ -15,26 +15,23 @@
 import AWSLambdaEvents
 import AWSLambdaRuntime
 import AWSLambdaTesting
-import XCTest
 @testable import SQSLambda
+import XCTest
 
 class SQSLambdaTests: LambdaTest {
-
     func testSQSLambda() async throws {
+        // given
+        let eventData = try self.loadTestData(file: .sqs)
+        let event = try JSONDecoder().decode(SQSEvent.self, from: eventData)
 
-            // given 
-            let eventData = try self.loadTestData(file: .sqs)
-            let event = try JSONDecoder().decode(SQSEvent.self, from: eventData)
-
-            // when 
-            do {
-                try await Lambda.test(SQSLambda.self, with: event)
-            } catch {
-                XCTFail("Lambda invocation should not throw error : \(error)")
-            }
-
-            // then   
-            // SQS Lambda returns Void
-
+        // when
+        do {
+            try await Lambda.test(SQSLambda.self, with: event)
+        } catch {
+            XCTFail("Lambda invocation should not throw error : \(error)")
         }
+
+        // then
+        // SQS Lambda returns Void
+    }
 }
