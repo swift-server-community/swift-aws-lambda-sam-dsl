@@ -58,6 +58,29 @@ extension String {
     public func toSwiftRegionEnumCase() -> String {
         self.replacingOccurrences(of: "-", with: "")
     }
+    
+    public func toSwiftAWSEnumCase() -> String {
+        let components = self.split(separator: "::")
+        guard components.count >= 2 else { return self }        
+        let lastTwoComponents = components.suffix(2)
+        let combinedString = lastTwoComponents.joined()
+        let capitalizedComponents = lastTwoComponents.map { component in
+            return component.prefix(1).uppercased() + component.dropFirst()
+        }
+        return capitalizedComponents.joined()
+    }
+    
+    public func toSwiftAWSClassCase() -> String {
+        let components = self.split(separator: "::")
+        guard components.count >= 2 else { return self }
+        let lastTwoComponents = components.suffix(2)
+        let combinedString = lastTwoComponents.joined()
+        let capitalizedComponents = lastTwoComponents.map { component in
+            return component.prefix(1).uppercased() + component.dropFirst()
+        }
+        
+        return capitalizedComponents.joined().replacingOccurrences(of: ".", with: "")
+    }
 
     public func toSwiftEnumCase() -> String {
         self
@@ -136,6 +159,15 @@ extension StringProtocol {
 
     fileprivate func upperFirst() -> String {
         String(self[self.startIndex]).uppercased() + self[index(after: startIndex)...]
+    }
+    
+    fileprivate func upperLastWord() -> String {
+        guard let lastSeparator = self.lastIndex(of: ":") else {
+            return self.upperFirst()
+        }
+        let beforeSeparator = self[..<lastSeparator]
+        let afterSeparator = self[index(after: lastSeparator)...]
+        return beforeSeparator + ":" + afterSeparator.upperFirst()
     }
 
     /// Lowercase first letter, or if first word is an uppercase acronym then lowercase the whole of the acronym

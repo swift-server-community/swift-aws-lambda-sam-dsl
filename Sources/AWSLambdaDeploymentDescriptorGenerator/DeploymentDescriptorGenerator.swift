@@ -37,59 +37,41 @@ struct DeploymentDescriptorGenerator {
     }
 
     func generate(from schema: JSONSchema) async throws {
-        let defaultInheritance = InheritanceClauseSyntax {
-            InheritedTypeSyntax(type: TypeSyntax("Codable"))
-            InheritedTypeSyntax(type: TypeSyntax("Sendable"))
-        }
-
         var propertyDecls = [MemberBlockItemListSyntax]()
-        var enumDecls = [MemberBlockItemListSyntax]()
+        var propertyEnumDecls = [MemberBlockItemListSyntax]()
+        var propertyCodingKeys = [String]()
+        
+        var definitionDecls = [MemberBlockItemListSyntax]()
+        var definitionEnumDecls = [MemberBlockItemListSyntax]()
+        var definitionCodingKeys = [String]()
+        
+       
 
-        for (name, value) in schema.properties ?? [:] {
-            if case .type(let jsonType) = value {
-                let swiftType = jsonType.swiftType(for: name)
-                let propertyName = name.toSwiftLabelCase()
+        generateDeclarations(from: schema.properties, into: &propertyDecls, enumDecls: &propertyEnumDecls,
+                             codingKeys: &propertyCodingKeys)
+        let definitionStructDecls = generateDefinitionsDeclaration(from: schema.definitions,
+                                       into: &definitionDecls,
+                                       enumDecls: &propertyEnumDecls,
+                                       codingKeys: &definitionCodingKeys)
 
-                if jsonType.hasEnum() {
-                    let enumDecl = generateEnumDeclaration(for: name, with: jsonType.enumValues() ?? ["No case found!"])
-                    enumDecls.append(enumDecl)
+        
+        propertyEnumDecls.append(generateEnumCodingKeys(with: propertyCodingKeys))
+        definitionEnumDecls.append(generateEnumCodingKeys(with: definitionCodingKeys))
 
-                    let enumPropertyDecl = generateEnumPropertyDeclaration(for: name, with: jsonType)
-                    propertyDecls.append(enumPropertyDecl)
-                } else {
-                    let propertyDecl = generateRegularPropertyDeclaration(for: name, with: jsonType)
-                    propertyDecls.append(propertyDecl)
-                }
-            }
-        }
+        let propertyStructDecl = generateStructDecl(name: "SAMDeploymentDescriptor", decls: propertyDecls, enumDecls: propertyEnumDecls)
+        
 
-        // Extract keys from the dictionary to generate coding keys enum
-        let keys = schema.properties?.keys.map { $0 } ?? []
-        let codingKeysEnum = generateEnumCodingKeys(with: keys)
-        enumDecls.append(codingKeysEnum)
-
-        let structDecl = StructDeclSyntax(modifiers: DeclModifierListSyntax { [DeclModifierSyntax(name: .keyword(.public))] },
-                                          name: "Property",
-                                          inheritanceClause: defaultInheritance) {
-            // Members of the struct (properties)
-            MemberBlockItemListSyntax {
-                for decl in propertyDecls {
-                    decl
-                }
-            }
-            // Enums
-            MemberBlockItemListSyntax {
-                for enumDecl in enumDecls {
-                    enumDecl
-                }
-            }
-        }
-
+//        let definitionStructDecl = generateStructDecl(name: "Definitions", decls: definitionDecls, enumDecls: definitionEnumDecls)
+        
+    
         // Create a source file syntax
         let source = SourceFileSyntax {
-            structDecl
+            propertyStructDecl
+            for decl in definitionStructDecls {
+                decl
+            }
         }
-
+           
         // Write to a file
         let renderedStruct = source.formatted().description
         self.writeGeneratedResultToFile(renderedStruct)
@@ -146,13 +128,7 @@ extension JSONType {
 
     private func swiftObjectType(for key: String) -> String {
         if case .object(let objectSchema) = self.subType {
-            var properties = [String]()
-            for (name, type) in objectSchema.properties ?? [:] {
-                properties.append("let \(name.toSwiftLabelCase()): \(type.jsonType().swiftType(for: name))")
-            }
-
             let structName = key
-            let structBody = properties.joined(separator: "\n")
 
             return structName
         } else {

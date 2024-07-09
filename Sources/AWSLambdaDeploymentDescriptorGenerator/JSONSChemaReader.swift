@@ -173,6 +173,14 @@ public enum JSONUnionType: Decodable, Sendable {
 
         return allOf
     }
+    
+    public func hasAnyOf() -> Bool {
+           if case .anyOf = self {
+               return true
+           }
+           return false
+       }
+    
 }
 
 // a JSON type
@@ -182,7 +190,7 @@ public struct JSONType: Decodable, Sendable {
     public let required: [String]?
     public let description: String?
     public let additionalProperties: Bool?
-//    public let enumeration: [String]?
+    public let enumeration: [String]? //TODO: should be JSONPrimitiveType to match all schema types
 
     public let subType: SubTypeSchema?
 
@@ -227,7 +235,6 @@ public struct JSONType: Decodable, Sendable {
         public let pattern: String?
         public let minLength: Int?
         public let maxLength: Int?
-        public let enumeration: [String]?
 
         // not used in SAM Schema
 //        let format: String
@@ -244,7 +251,6 @@ public struct JSONType: Decodable, Sendable {
             self.pattern = try container.decodeIfPresent(String.self, forKey: .pattern)
             self.minLength = try container.decodeIfPresent(Int.self, forKey: .minLength)
             self.maxLength = try container.decodeIfPresent(Int.self, forKey: .maxLength)
-            self.enumeration = try container.decodeIfPresent([String].self, forKey: .enumeration)
         }
     }
 
@@ -305,7 +311,7 @@ public struct JSONType: Decodable, Sendable {
     enum CodingKeys: String, CodingKey {
         case type
         case reference = "$ref"
-//        case enumeration = "enum"
+        case enumeration = "enum"
         case required
         case description
         case additionalProperties
@@ -348,7 +354,7 @@ public struct JSONType: Decodable, Sendable {
             self.subType = nil
         }
 
-//        self.enumeration = try container.decodeIfPresent([String].self, forKey: .enumeration)
+        self.enumeration = try container.decodeIfPresent([String].self, forKey: .enumeration)
         self.required = try container.decodeIfPresent([String].self, forKey: .required)
         self.description = try container.decodeIfPresent(String.self, forKey: .description)
         self.additionalProperties = try container.decodeIfPresent(Bool.self, forKey: .additionalProperties)
@@ -396,14 +402,13 @@ public struct JSONType: Decodable, Sendable {
     }
 
     public func enumValues() -> [String]? {
-        if case .string(let schema) = self.subType {
-            return schema.enumeration
-        } else {
-            return nil
-        }
+        return self.enumeration
     }
-
+    
     public func hasEnum() -> Bool {
-        self.enumValues() != nil
+        if let enumValues = self.enumValues(), !enumValues.isEmpty {
+            return true
+        }
+        return false
     }
 }
