@@ -15,12 +15,12 @@ let package = Package(
         .library(name: "AWSLambdaDeploymentDescriptor", type: .dynamic, targets: ["AWSLambdaDeploymentDescriptor"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/jpsim/Yams.git", from: "5.1.2")
+        .package(url: "https://github.com/jpsim/Yams.git", from: "5.1.2"),
     ],
     targets: [
         .target(
             name: "AWSLambdaDeploymentDescriptor",
-            dependencies: [ .product(name: "Yams", package: "Yams")],
+            dependencies: [.product(name: "Yams", package: "Yams")],
             path: "Sources/AWSLambdaDeploymentDescriptor",
             swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
         ),

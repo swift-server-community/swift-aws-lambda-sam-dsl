@@ -3,7 +3,7 @@ import XCTest
 
 enum TestData: String {
     case apiGatewayV2 = "apiv2"
-    case sqs = "sqs"
+    case sqs
 }
 
 class LambdaTest: XCTestCase {
@@ -17,6 +17,6 @@ class LambdaTest: XCTestCase {
     // load a test file added as a resource to the executable bundle
     func loadTestData(file: TestData) throws -> Data {
         // load list from file
-        return try Data(contentsOf: urlForTestData(file: file))
+        try Data(contentsOf: self.urlForTestData(file: file))
     }
 }
