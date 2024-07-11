@@ -8,7 +8,7 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 
 extension DeploymentDescriptorGenerator {
-     func generateAnyOfPropertyDeclaration(for key: String, with jsonTypes: [JSONType]) -> MemberBlockItemListSyntax {
+     func generateAnyOfPropertyDeclaration(for key: String, with jsonTypes: [JSONType], isRequired: Bool) -> MemberBlockItemListSyntax {
          let propertyDecl = VariableDeclSyntax(bindingSpecifier: .keyword(.let)) {
             PatternBindingSyntax(
                 pattern: PatternSyntax(stringLiteral: key.toSwiftLabelCase()),
@@ -22,17 +22,14 @@ extension DeploymentDescriptorGenerator {
         return jsonTypes.map { $0.reference ?? "UnknownType" }.joined(separator: " | ")
     }
     
-    func handleAnyOfCase(name: String, value: JSONUnionType, decls: inout [MemberBlockItemListSyntax]) {
+    func handleAnyOfCase(name: String, value: JSONUnionType, decls: inout [MemberBlockItemListSyntax], isRequired: Bool) {
         if case .anyOf(let jsonTypes) = value {
             if name == "Resources" {
                 print("🧞‍♀️ -------------- \((name))")
-                decls.append(generateResourcesPropertyDeclaration(for: name, with: jsonTypes))
-            } else if name == "AWS::Serverless::Api" {
-                print("☘️ -------------- \((name))")
-                decls.append(generateDependsPropertyDeclaration(for: name, with: jsonTypes))
+                decls.append(generateResourcesPropertyDeclaration(for: name, with: jsonTypes, isRequired: isRequired))
             } else {
                 print("🦹🏽‍♀️ -------------- \(name)")
-                decls.append(generateAnyOfPropertyDeclaration(for: name, with: jsonTypes))
+                decls.append(generateAnyOfPropertyDeclaration(for: name, with: jsonTypes, isRequired: isRequired))
             }
         }
     }

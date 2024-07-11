@@ -11,23 +11,24 @@ import SwiftSyntaxBuilder
 
 extension DeploymentDescriptorGenerator {
     
-    func handleTypeCase(name: String, jsonType: JSONType, decls: inout [MemberBlockItemListSyntax], enumDecls: inout [MemberBlockItemListSyntax]) { // clean this
+    func handleTypeCase(name: String, jsonType: JSONType, decls: inout [MemberBlockItemListSyntax], enumDecls: inout [MemberBlockItemListSyntax], isRequired: Bool) { // clean this
+        
         if jsonType.hasEnum() {
             enumDecls.append(generateEnumDeclaration(for: name, with: jsonType.enumValues() ?? ["No case found!"]))
-            decls.append(generateEnumPropertyDeclaration(for: name, with: jsonType))
-        } else if let objectSchema = jsonType.object(), let properties = objectSchema.properties {
-            let structDecl = generateStructDeclaration(for: name, with: properties)
-            decls.append(MemberBlockItemListSyntax{ structDecl })
+            decls.append(generateEnumPropertyDeclaration(for: name, with: jsonType, isRequired: isRequired))
         } else {
-            decls.append(generateRegularPropertyDeclaration(for: name, with: jsonType))
+            let swiftType = jsonType.swiftType(for: name)
+            decls.append(generateRegularPropertyDeclaration(for: name, with: swiftType, isRequired: isRequired))
         }
     }
     
-    func generateDeclarations(from dictionary: [String: JSONUnionType]?, into decls: inout [MemberBlockItemListSyntax], enumDecls: inout [MemberBlockItemListSyntax], codingKeys: inout [String]) {
+    func generateDeclarations(from dictionary: [String: JSONUnionType]?, into decls: inout [MemberBlockItemListSyntax], enumDecls: inout [MemberBlockItemListSyntax], codingKeys: inout [String], isRequired: [String]?) {
+     
+        
         guard let dictionary = dictionary else { return }
         for (name, value) in dictionary {
             print("➡️ Processing key: \(name)")
-            
+            let required = isRequired?.contains(name) ?? false
             
             if case .type(let jsonType) = value {
                 // Check for patternProperties
@@ -40,24 +41,28 @@ extension DeploymentDescriptorGenerator {
                             print("🥳 Found anyOf within patternProperty for pattern: \(pattern)")
                             if case .anyOf(let jsonTypes) = patternValue {
                                 print("🥳 Handling anyOf case for patternProperty with \(jsonTypes.count) elements")
-                                handleAnyOfCase(name: name, value: patternValue, decls: &decls)
+                                handleAnyOfCase(name: name, value: patternValue, decls: &decls, isRequired: required)
                                 codingKeys.append(name)
                             }
                         }  else {
-                            handleTypeCase(name: name, jsonType: jsonType, decls: &decls, enumDecls: &enumDecls)
+                            handleTypeCase(name: name, jsonType: jsonType, decls: &decls, enumDecls: &enumDecls,
+                                           isRequired: required)
                             codingKeys.append(name)
                         }
                     }
                 } else  if let objectSchema = value.jsonType().stringSchema() {
-                    handleTypeCase(name: name, jsonType: jsonType, decls: &decls, enumDecls: &enumDecls)
+                    handleTypeCase(name: name, jsonType: jsonType, decls: &decls, enumDecls: &enumDecls,
+                                   isRequired: required)
                     codingKeys.append(name)
                 } else if jsonType.hasEnum() {
-                    handleTypeCase(name: name, jsonType: jsonType, decls: &decls, enumDecls: &enumDecls)
+                    handleTypeCase(name: name, jsonType: jsonType, decls: &decls, enumDecls: &enumDecls,
+                                   isRequired: required)
                     codingKeys.append(name)
                 }
             } else {
                 print("❓ No match for key: \(name)")
             }
         }
+      
     }
 }

@@ -411,4 +411,11 @@ public struct JSONType: Decodable, Sendable {
         }
         return false
     }
+    
+    public func hasRequired() -> Bool {
+          if let required = self.required, !required.isEmpty {
+              return true
+          }
+          return false
+      }
 }

@@ -92,6 +92,8 @@ extension String {
             .replacingOccurrences(of: "(", with: "_")
             .replacingOccurrences(of: ")", with: "_")
             .replacingOccurrences(of: "*", with: "all")
+            .replacingOccurrences(of: ">", with: "")
+            .replacingOccurrences(of: "<", with: "")
             .toSwiftLabelCase(isEnum: true)
             .reservedwordEscaped()
     }

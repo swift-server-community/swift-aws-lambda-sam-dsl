@@ -9,8 +9,7 @@ import SwiftSyntaxBuilder
 
 extension DeploymentDescriptorGenerator {
     
-
-    func generateDefinitionsDeclaration(from dictionary: [String: JSONUnionType]?, into decls: inout [MemberBlockItemListSyntax], enumDecls: inout [MemberBlockItemListSyntax], codingKeys: inout [String]) -> [StructDeclSyntax] {
+    func generateDefinitionsDeclaration(from dictionary: [String: JSONUnionType]?) -> [StructDeclSyntax] {
         guard let dictionary = dictionary else { return [] }
         var structDecls: [StructDeclSyntax] = []
         
@@ -20,10 +19,7 @@ extension DeploymentDescriptorGenerator {
             if case .type(let jsonType) = value {
                 // Check for object schema with properties
                 if let objectSchema = value.jsonType().object(), let properties = objectSchema.properties {
-                    let structDecl = generateStructDeclaration(for: name.toSwiftAWSClassCase().toSwiftClassCase(),
-                                                               with: properties)
-                    
-                    decls.append(MemberBlockItemListSyntax{ structDecl })
+                    let structDecl = generateStructDeclaration(for: name.toSwiftAWSClassCase().toSwiftClassCase(), with: properties, isRequired: jsonType.required)
                     structDecls.append(structDecl)
                 }
             }
@@ -31,17 +27,31 @@ extension DeploymentDescriptorGenerator {
         return structDecls
     }
     
-    
-    
-    
-    func generateStructDeclaration(for name: String, with properties: [String: JSONUnionType]) -> StructDeclSyntax {
+    func generateStructDeclaration(for name: String, with properties: [String: JSONUnionType],
+                                   isRequired: [String]?) -> StructDeclSyntax {
         var memberDecls = [MemberBlockItemListSyntax]()
+        var definitionCodingKeys = [String]()
+        var codingKeys = [String]()
         
         for (propertyName, propertyType) in properties {
             print("🏆 🏆", propertyName)
+            let required = isRequired?.contains(propertyName) ?? false
+            
             if case .type(let jSONType) = propertyType {
-                let propertyDecl = generateRegularPropertyDeclaration(for: propertyName, with: jSONType)
-                memberDecls.append(MemberBlockItemListSyntax{ propertyDecl })
+                if propertyType.jsonType().hasEnum() {
+                    memberDecls.append(generateEnumDeclaration(for: propertyName, with: jSONType.enumValues() ?? ["No case found!"]))
+                    memberDecls.append(generateEnumPropertyDeclaration(for: propertyName, with: jSONType, isRequired: required)) //
+                    
+                } else {
+                    let swiftType = jSONType.swiftType(for: propertyName)
+                    let propertyDecl = generateRegularPropertyDeclaration(for: propertyName, with: swiftType, isRequired: required)
+                    memberDecls.append(MemberBlockItemListSyntax { propertyDecl })
+                }
+                codingKeys.append(propertyName)
+            } else if case .anyOf(let jSONTypes) = propertyType {
+                print("🎸 Found anyOf within patternProperty for pattern: \(propertyName)")
+                memberDecls.append(generateDependsPropertyDeclaration(for: propertyName, with: jSONTypes, isRequired: required))
+                codingKeys.append(propertyName)
             }
         }
         
@@ -49,6 +59,7 @@ extension DeploymentDescriptorGenerator {
             InheritedTypeSyntax(type: TypeSyntax("Codable"))
             InheritedTypeSyntax(type: TypeSyntax("Sendable"))
         }
+        let codingKeysEnum = generateEnumCodingKeys(with: codingKeys)
         
         return StructDeclSyntax(modifiers: DeclModifierListSyntax { [DeclModifierSyntax(name: .keyword(.public))] },
                                 name: TokenSyntax(stringLiteral: name),
@@ -57,8 +68,8 @@ extension DeploymentDescriptorGenerator {
                 for memberDecl in memberDecls {
                     memberDecl
                 }
+                codingKeysEnum
             }
         }
     }
-        
 }

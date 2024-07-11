@@ -19,9 +19,10 @@ extension DeploymentDescriptorGenerator {
                                       name: .identifier(enumName),
                                       inheritanceClause: enumInheritance) {
             MemberBlockItemListSyntax {
-                EnumCaseDeclSyntax {
+                
                     for value in values {
                         let caseName = (value.allLetterIsNumeric() ? ("v" + value.toSwiftEnumCase()) : value.toSwiftEnumCase())
+                        EnumCaseDeclSyntax {
                         EnumCaseElementListSyntax {
                             EnumCaseElementSyntax(
                                 name: .identifier(caseName),
@@ -31,8 +32,8 @@ extension DeploymentDescriptorGenerator {
                                 )
                             )
                         }
-                    }
-                }.with(\.leadingTrivia, .newlines(1))
+                    }.with(\.leadingTrivia, .newlines(1))
+                }
             }
         }.with(\.leadingTrivia, .newlines(2))
 

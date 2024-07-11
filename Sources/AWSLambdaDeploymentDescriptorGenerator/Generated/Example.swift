@@ -34,7 +34,7 @@ public enum Resources {  //Done..✅
   case cloudFormationResource(CloudFormationResource)
 }
 
-public struct ServlessFunction {
+public struct ServlessFunction { //Done..✅
   let deletionPolicy: String
   //...
 
@@ -45,7 +45,7 @@ public struct ServlessFunction {
   }
 }
 
-public struct ServerlessAPI {
+public struct ServerlessAPI { //Done..✅
   let deletionPolicy: String
   //...
 
@@ -91,10 +91,13 @@ public struct ServerlessSimpleTablePrimaryKey {
 /*
 // GOALS
 
- 1. DepndsOn
- 2. Type enum
- 3. coding keys
- 4. generate the top level struct JSONSChemaDefinition
+ 1. AnyOf / AllOf
+ 2. type not supported? 
+ 3. coding keys of defenitions //Done..✅
+ 4. generate the top level struct JSONSChemaDefinition .. ??
+ 5. generate the empty structs of the DeploymentDescriptor
+ 6. optionals .. Done.. ✅ (Some cases needs to be handled inside definistions and nested structs)
+ 7. check every struct missings
 */
 
 //MARK: - Definitions

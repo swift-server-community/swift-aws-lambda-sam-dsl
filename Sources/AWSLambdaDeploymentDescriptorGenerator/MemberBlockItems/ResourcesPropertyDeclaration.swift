@@ -8,7 +8,7 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 
 extension DeploymentDescriptorGenerator {
-    func generateResourcesPropertyDeclaration(for name: String, with types: [JSONType]) -> MemberBlockItemListSyntax {
+    func generateResourcesPropertyDeclaration(for name: String, with types: [JSONType], isRequired: Bool) -> MemberBlockItemListSyntax {
         // Generate the Resources enum
         var resourcesEnumCases = [EnumCaseElementSyntax]()
         let enumInheritance = InheritanceClauseSyntax {
@@ -16,7 +16,8 @@ extension DeploymentDescriptorGenerator {
             InheritedTypeSyntax(type: TypeSyntax("Codable"))
             InheritedTypeSyntax(type: TypeSyntax("Sendable"))
         }
-   
+        
+
 
         let enumDecl = EnumDeclSyntax(modifiers: DeclModifierListSyntax { DeclModifierSyntax(name: .keyword(.public)) },
                                       name: .identifier(name),
@@ -27,6 +28,9 @@ extension DeploymentDescriptorGenerator {
                         let caseName = reference.contains(":") ? reference.toSwiftAWSEnumCase().toSwiftVariableCase() : String(reference.split(separator: "/").last ?? "unknown").toSwiftVariableCase()
 
                         let caseType = reference.contains(":") ? reference.toSwiftAWSEnumCase() : String(reference.split(separator: "/").last ?? "unknown")
+                        
+                        let typeAnnotation: TypeSyntaxProtocol = isRequired ? TypeSyntax(IdentifierTypeSyntax(name: .identifier(caseType))) : OptionalTypeSyntax(wrappedType: IdentifierTypeSyntax(name: .identifier(caseType)))
+                        
                         EnumCaseDeclSyntax {
                             EnumCaseElementListSyntax {
                                 EnumCaseElementSyntax(
@@ -34,7 +38,7 @@ extension DeploymentDescriptorGenerator {
                                     parameterClause: EnumCaseParameterClauseSyntax(
                                         parameters: EnumCaseParameterListSyntax{
                                             EnumCaseParameterSyntax(
-                                                type: TypeSyntax(IdentifierTypeSyntax(name: .identifier(caseType)))
+                                                type: typeAnnotation
                                             )
                                         }
                                     )
@@ -70,7 +74,7 @@ extension DeploymentDescriptorGenerator {
         }
     }
     
-    func generateDependsPropertyDeclaration(for name: String, with types: [JSONType]) -> MemberBlockItemListSyntax {
+    func generateDependsPropertyDeclaration(for name: String, with types: [JSONType], isRequired: Bool) -> MemberBlockItemListSyntax {
         var enumCases: [EnumCaseElementSyntax] = []
         let enumInheritance = InheritanceClauseSyntax {
             InheritedTypeSyntax(type: TypeSyntax("String"))
@@ -106,21 +110,31 @@ extension DeploymentDescriptorGenerator {
             }.with(\.leadingTrivia, .newlines(1))
         }.with(\.leadingTrivia, .newlines(2))
 
-                
+        let typeAnnotation: TypeSyntaxProtocol
+         if isRequired {
+             typeAnnotation = TypeSyntax(DictionaryTypeSyntax(
+                leftSquare: .leftSquareToken(),
+                key: TypeSyntax(IdentifierTypeSyntax(name: .identifier("String"))),
+                colon: .colonToken(),
+                value: TypeSyntax(stringLiteral: name),
+                rightSquare: .rightSquareToken()
+            ))
+         } else {
+             typeAnnotation = OptionalTypeSyntax(wrappedType: TypeSyntax(DictionaryTypeSyntax(
+                leftSquare: .leftSquareToken(),
+                key: TypeSyntax(IdentifierTypeSyntax(name: .identifier("String"))),
+                colon: .colonToken(),
+                value: TypeSyntax(stringLiteral: name),
+                rightSquare: .rightSquareToken()
+            )))
+         }
         // Generate the resources property
         let propertyDecl = VariableDeclSyntax(bindingSpecifier: .keyword(.let)) {
             PatternBindingSyntax(
                 pattern: PatternSyntax(stringLiteral: name.toSwiftLabelCase()),
                 typeAnnotation: TypeAnnotationSyntax(
                     colon: .colonToken(trailingTrivia: .space),
-                    type: TypeSyntax(DictionaryTypeSyntax(
-                        leftSquare: .leftSquareToken(),
-                        key: TypeSyntax(IdentifierTypeSyntax(name: .identifier("String"))),
-                        colon: .colonToken(),
-                        value: TypeSyntax(stringLiteral: name),
-                        rightSquare: .rightSquareToken()
-                    ))
-                )
+                    type: typeAnnotation)
             )
         }
 

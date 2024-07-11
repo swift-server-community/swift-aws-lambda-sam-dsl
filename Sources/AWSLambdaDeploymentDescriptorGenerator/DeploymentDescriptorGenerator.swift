@@ -36,39 +36,44 @@ struct DeploymentDescriptorGenerator {
         return try decoder.decode(JSONSchema.self, from: schema)
     }
 
+    func getPropertiesAndTypes(of instance: Any) -> [(name: String, type: String)] {
+        let mirror = Mirror(reflecting: instance)
+        var properties: [(name: String, type: String)] = []
+
+        for child in mirror.children {
+            if let label = child.label {
+                var typeDescription = String(describing: type(of: child.value))
+                if typeDescription.hasPrefix("Optional<") && typeDescription.hasSuffix(">") {
+                    typeDescription = String(typeDescription.dropFirst(9).dropLast(1))
+                }
+                properties.append((name: label, type: typeDescription))
+            }
+        }
+        
+        return properties
+    }
+    
     func generate(from schema: JSONSchema) async throws {
         var propertyDecls = [MemberBlockItemListSyntax]()
         var propertyEnumDecls = [MemberBlockItemListSyntax]()
         var propertyCodingKeys = [String]()
-        
-        var definitionDecls = [MemberBlockItemListSyntax]()
-        var definitionEnumDecls = [MemberBlockItemListSyntax]()
-        var definitionCodingKeys = [String]()
-        
-       
+                
 
         generateDeclarations(from: schema.properties, into: &propertyDecls, enumDecls: &propertyEnumDecls,
-                             codingKeys: &propertyCodingKeys)
-        let definitionStructDecls = generateDefinitionsDeclaration(from: schema.definitions,
-                                       into: &definitionDecls,
-                                       enumDecls: &propertyEnumDecls,
-                                       codingKeys: &definitionCodingKeys)
-
-        
+                             codingKeys: &propertyCodingKeys, isRequired: schema.required)
         propertyEnumDecls.append(generateEnumCodingKeys(with: propertyCodingKeys))
-        definitionEnumDecls.append(generateEnumCodingKeys(with: definitionCodingKeys))
 
+//        let schemaStructDecl = generateSchemaStructDeclaration(from: schema, required: schema.required)
         let propertyStructDecl = generateStructDecl(name: "SAMDeploymentDescriptor", decls: propertyDecls, enumDecls: propertyEnumDecls)
         
-
-//        let definitionStructDecl = generateStructDecl(name: "Definitions", decls: definitionDecls, enumDecls: definitionEnumDecls)
-        
+        let definitionStructDecls = generateDefinitionsDeclaration(from: schema.definitions)
     
         // Create a source file syntax
         let source = SourceFileSyntax {
-            propertyStructDecl
+//            schemaStructDecl.with(\.leadingTrivia, .newlines(1))
+            propertyStructDecl.with(\.leadingTrivia, .newlines(1))
             for decl in definitionStructDecls {
-                decl
+                decl.with(\.leadingTrivia, .newlines(2))
             }
         }
            
