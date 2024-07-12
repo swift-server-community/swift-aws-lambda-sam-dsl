@@ -418,4 +418,9 @@ public struct JSONType: Decodable, Sendable {
           }
           return false
       }
+    
+    public func hasReference() -> Bool {
+         return self.reference != nil
+     }
+
 }

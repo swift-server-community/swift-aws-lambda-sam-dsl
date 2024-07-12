@@ -42,6 +42,11 @@ extension DeploymentDescriptorGenerator {
                     memberDecls.append(generateEnumDeclaration(for: propertyName, with: jSONType.enumValues() ?? ["No case found!"]))
                     memberDecls.append(generateEnumPropertyDeclaration(for: propertyName, with: jSONType, isRequired: required)) //
                     
+                } else if let reference = propertyType.jsonType().reference {
+                    let swiftType = reference.toSwiftAWSClassCase() 
+                    let propertyDecl = generateRegularPropertyDeclaration(for: propertyName, with: swiftType, isRequired: required)
+                    memberDecls.append(MemberBlockItemListSyntax { propertyDecl })
+                    
                 } else {
                     let swiftType = jSONType.swiftType(for: propertyName)
                     let propertyDecl = generateRegularPropertyDeclaration(for: propertyName, with: swiftType, isRequired: required)

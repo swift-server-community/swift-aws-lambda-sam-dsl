@@ -10,9 +10,7 @@ import SwiftSyntaxBuilder
 extension DeploymentDescriptorGenerator {
     func generateResourcesPropertyDeclaration(for name: String, with types: [JSONType], isRequired: Bool) -> MemberBlockItemListSyntax {
         // Generate the Resources enum
-        var resourcesEnumCases = [EnumCaseElementSyntax]()
         let enumInheritance = InheritanceClauseSyntax {
-            InheritedTypeSyntax(type: TypeSyntax("String"))
             InheritedTypeSyntax(type: TypeSyntax("Codable"))
             InheritedTypeSyntax(type: TypeSyntax("Sendable"))
         }
@@ -75,12 +73,12 @@ extension DeploymentDescriptorGenerator {
     }
     
     func generateDependsPropertyDeclaration(for name: String, with types: [JSONType], isRequired: Bool) -> MemberBlockItemListSyntax {
-        var enumCases: [EnumCaseElementSyntax] = []
         let enumInheritance = InheritanceClauseSyntax {
-            InheritedTypeSyntax(type: TypeSyntax("String"))
             InheritedTypeSyntax(type: TypeSyntax("Codable"))
             InheritedTypeSyntax(type: TypeSyntax("Sendable"))
         }
+        var memberDecls = [MemberBlockItemListSyntax]()
+        var structDecls = [StructDeclSyntax]()
    
         let enumDecl = EnumDeclSyntax(modifiers: DeclModifierListSyntax { DeclModifierSyntax(name: .keyword(.public)) },
                                       name: .identifier(name.toSwiftAWSClassCase().toSwiftClassCase()),
@@ -88,12 +86,25 @@ extension DeploymentDescriptorGenerator {
             MemberBlockItemListSyntax {
                 for jsonType in types {
                     if let arrayType = jsonType.arraySchema() {
-
+                        EnumCaseDeclSyntax {
+                            EnumCaseElementListSyntax {
+                                EnumCaseElementSyntax(
+                                    name: .identifier("items"),
+                                    parameterClause: EnumCaseParameterClauseSyntax(
+                                        parameters: EnumCaseParameterListSyntax {
+                                            EnumCaseParameterSyntax(
+                                                type: TypeSyntax(IdentifierTypeSyntax(name: .identifier("[String]")))
+                                            )
+                                        }
+                                    )
+                                )
+                            }
+                        }
                     } else if let stringType = jsonType.stringSchema() {
                         EnumCaseDeclSyntax {
                             EnumCaseElementListSyntax {
                                 EnumCaseElementSyntax(
-                                    name: .identifier("type"),
+                                    name: .identifier("itemsString"),
                                     parameterClause: EnumCaseParameterClauseSyntax(
                                         parameters: EnumCaseParameterListSyntax{
                                             EnumCaseParameterSyntax(
@@ -105,6 +116,44 @@ extension DeploymentDescriptorGenerator {
                             }
                         }
                         
+                    } else if let objectType = jsonType.object() {
+                        EnumCaseDeclSyntax {
+                            EnumCaseElementListSyntax {
+                                EnumCaseElementSyntax(
+                                    name: .identifier("itemObject"),
+                                    parameterClause: EnumCaseParameterClauseSyntax(
+                                        parameters: EnumCaseParameterListSyntax{
+                                            EnumCaseParameterSyntax(
+                                                type: TypeSyntax(IdentifierTypeSyntax(name: .identifier("\(name.toSwiftAWSClassCase().toSwiftClassCase())Object")))
+                                            )
+                                        }
+                                    )
+                                )
+                            }
+                        }
+                        
+                    }  else if let reference = jsonType.reference {
+                        
+                        let caseName = reference.contains(":") ? reference.toSwiftAWSEnumCase().toSwiftVariableCase() : String(reference.split(separator: "/").last ?? "unknown").toSwiftVariableCase()
+                        
+                        let caseType = reference.contains(":") ? reference.toSwiftAWSEnumCase() : String(reference.split(separator: "/").last ?? "unknown")
+                        
+                        let typeAnnotation: TypeSyntaxProtocol = isRequired ? TypeSyntax(IdentifierTypeSyntax(name: .identifier(caseType))) : OptionalTypeSyntax(wrappedType: IdentifierTypeSyntax(name: .identifier(caseType)))
+                        
+                        EnumCaseDeclSyntax {
+                            EnumCaseElementListSyntax {
+                                EnumCaseElementSyntax(
+                                    name: .identifier(caseName),
+                                    parameterClause: EnumCaseParameterClauseSyntax(
+                                        parameters: EnumCaseParameterListSyntax{
+                                            EnumCaseParameterSyntax(
+                                                type: typeAnnotation
+                                            )
+                                        }
+                                    )
+                                )
+                            }
+                        }
                     }
                 }
             }.with(\.leadingTrivia, .newlines(1))
@@ -137,12 +186,45 @@ extension DeploymentDescriptorGenerator {
                     type: typeAnnotation)
             )
         }
+        
+       
+            for jsonType in types {
+                if let objectType = jsonType.object() {
+                let propertyDecl = MemberBlockItemListSyntax {
+                    let defaultInheritance = InheritanceClauseSyntax {
+                        InheritedTypeSyntax(type: TypeSyntax("Codable"))
+                        InheritedTypeSyntax(type: TypeSyntax("Sendable"))
+                    }
+                    StructDeclSyntax(modifiers: DeclModifierListSyntax { [DeclModifierSyntax(name: .keyword(.public))] },
+                                     name: TokenSyntax(stringLiteral: "\(name.toSwiftAWSClassCase().toSwiftClassCase())Object"),
+                                     inheritanceClause: defaultInheritance) {
+                        MemberBlockItemListSyntax {
+                            
+                        }
+                    }
+                    
+                }
+                memberDecls.append(MemberBlockItemListSyntax{propertyDecl})
+                    
+                } else if let objectSchema = jsonType.object(), let properties = objectSchema.properties { // if it has properties
+                    let structDecl = generateStructDeclaration(for: "\(name.toSwiftAWSClassCase().toSwiftClassCase())Object",
+                                                               with: properties, isRequired: jsonType.required)
+                    memberDecls.append(MemberBlockItemListSyntax{structDecl})
+                }
 
+        }
+
+        memberDecls.append(MemberBlockItemListSyntax{ propertyDecl })
+        memberDecls.append(MemberBlockItemListSyntax{ enumDecl })
+        for structDecl in structDecls {
+            memberDecls.append(MemberBlockItemListSyntax{ structDecl })
+        }
         
         // Return the combined declarations
         return MemberBlockItemListSyntax {
-            DeclSyntax(propertyDecl)
-            DeclSyntax(enumDecl)
+            for memberDecl in memberDecls {
+                memberDecl
+            }
         }
     }
 

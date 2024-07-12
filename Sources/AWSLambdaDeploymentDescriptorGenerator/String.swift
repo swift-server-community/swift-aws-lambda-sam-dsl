@@ -46,7 +46,8 @@ extension String {
     }
 
     public func toSwiftVariableCase() -> String {
-        self.toSwiftLabelCase().reservedwordEscaped()
+        self.replacingOccurrences(of: ".", with: "")
+            .toSwiftLabelCase().reservedwordEscaped()
     }
 
     public func toSwiftClassCase() -> String {
@@ -63,18 +64,16 @@ extension String {
         let components = self.split(separator: "::")
         guard components.count >= 2 else { return self }        
         let lastTwoComponents = components.suffix(2)
-        let combinedString = lastTwoComponents.joined()
         let capitalizedComponents = lastTwoComponents.map { component in
             return component.prefix(1).uppercased() + component.dropFirst()
         }
-        return capitalizedComponents.joined()
+        return capitalizedComponents.joined().replacingOccurrences(of: ".", with: "")
     }
     
     public func toSwiftAWSClassCase() -> String {
         let components = self.split(separator: "::")
         guard components.count >= 2 else { return self }
         let lastTwoComponents = components.suffix(2)
-        let combinedString = lastTwoComponents.joined()
         let capitalizedComponents = lastTwoComponents.map { component in
             return component.prefix(1).uppercased() + component.dropFirst()
         }

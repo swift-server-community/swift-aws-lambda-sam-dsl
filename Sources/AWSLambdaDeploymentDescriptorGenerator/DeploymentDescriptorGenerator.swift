@@ -35,23 +35,6 @@ struct DeploymentDescriptorGenerator {
         let decoder = JSONDecoder()
         return try decoder.decode(JSONSchema.self, from: schema)
     }
-
-    func getPropertiesAndTypes(of instance: Any) -> [(name: String, type: String)] {
-        let mirror = Mirror(reflecting: instance)
-        var properties: [(name: String, type: String)] = []
-
-        for child in mirror.children {
-            if let label = child.label {
-                var typeDescription = String(describing: type(of: child.value))
-                if typeDescription.hasPrefix("Optional<") && typeDescription.hasSuffix(">") {
-                    typeDescription = String(typeDescription.dropFirst(9).dropLast(1))
-                }
-                properties.append((name: label, type: typeDescription))
-            }
-        }
-        
-        return properties
-    }
     
     func generate(from schema: JSONSchema) async throws {
         var propertyDecls = [MemberBlockItemListSyntax]()
@@ -63,14 +46,11 @@ struct DeploymentDescriptorGenerator {
                              codingKeys: &propertyCodingKeys, isRequired: schema.required)
         propertyEnumDecls.append(generateEnumCodingKeys(with: propertyCodingKeys))
 
-//        let schemaStructDecl = generateSchemaStructDeclaration(from: schema, required: schema.required)
         let propertyStructDecl = generateStructDecl(name: "SAMDeploymentDescriptor", decls: propertyDecls, enumDecls: propertyEnumDecls)
-        
         let definitionStructDecls = generateDefinitionsDeclaration(from: schema.definitions)
     
         // Create a source file syntax
         let source = SourceFileSyntax {
-//            schemaStructDecl.with(\.leadingTrivia, .newlines(1))
             propertyStructDecl.with(\.leadingTrivia, .newlines(1))
             for decl in definitionStructDecls {
                 decl.with(\.leadingTrivia, .newlines(2))
@@ -126,7 +106,7 @@ extension JSONType {
         case .number: "Double"
         case .boolean: "Bool"
         case .array: "[\(self.items()?.swiftType(for: key) ?? "Any")]"
-        case .object: self.swiftObjectType(for: key)
+        case .object:  self.hasReference() ? "\(key)" : self.swiftObjectType(for: key)
         default: "not implemented yet ⚠️"
         }
     }

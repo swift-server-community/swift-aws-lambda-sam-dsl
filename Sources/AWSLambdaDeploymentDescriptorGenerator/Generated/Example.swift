@@ -89,15 +89,18 @@ public struct ServerlessSimpleTablePrimaryKey {
 }
 
 /*
-// GOALS
+// GOALS..
 
- 1. AnyOf / AllOf
- 2. type not supported? 
+ 1. AnyOf / AllOf ... Done.. ✅ (Some cases needs to be handled inside definitions and nested structs)
+ 2. type not supported filter /Done..✅
+    type not supported noEcho 😭
  3. coding keys of defenitions //Done..✅
- 4. generate the top level struct JSONSChemaDefinition .. ??
- 5. generate the empty structs of the DeploymentDescriptor
- 6. optionals .. Done.. ✅ (Some cases needs to be handled inside definistions and nested structs)
- 7. check every struct missings
+ 5. generate the nested structs of the DeploymentDescriptor
+    generate the nested structs of the Definitions
+ 
+ 6. optionals .. Done.. ✅ (Some cases needs to be handled inside definitions and nested structs)
+ 
+ 7. clean then check every struct missings
 */
 
 //MARK: - Definitions
