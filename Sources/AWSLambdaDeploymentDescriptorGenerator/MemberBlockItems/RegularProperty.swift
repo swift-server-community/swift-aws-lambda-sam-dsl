@@ -11,7 +11,7 @@ extension DeploymentDescriptorGenerator {
         
         var memberDecls = [MemberBlockItemListSyntax]()
         
-        let propertyName = name.toSwiftLabelCase()
+        let propertyName = name.toSwiftVariableCase()
         var swiftType = type.swiftType(for: name)
         
         if let objectSchema = type.object() {

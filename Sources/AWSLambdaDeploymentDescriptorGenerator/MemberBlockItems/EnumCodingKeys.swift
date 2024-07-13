@@ -18,7 +18,7 @@ extension DeploymentDescriptorGenerator {
                                       inheritanceClause: enumInheritance) {
             MemberBlockItemListSyntax {
                 for value in values {
-                    let caseName = value.toSwiftLabelCase()
+                    let caseName = value.toSwiftVariableCase()
                     EnumCaseDeclSyntax {
                         EnumCaseElementListSyntax {
                             EnumCaseElementSyntax(

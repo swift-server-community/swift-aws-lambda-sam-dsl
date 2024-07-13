@@ -52,7 +52,7 @@ extension DeploymentDescriptorGenerator {
         // Generate the resources property
         let resourcesProperty = VariableDeclSyntax(bindingSpecifier: .keyword(.let)) {
             PatternBindingSyntax(
-                pattern: PatternSyntax(stringLiteral: name.toSwiftLabelCase()),
+                pattern: PatternSyntax(stringLiteral: name.toSwiftVariableCase()),
                 typeAnnotation: TypeAnnotationSyntax(
                     colon: .colonToken(trailingTrivia: .space),
                     type: TypeSyntax(DictionaryTypeSyntax(
@@ -180,7 +180,7 @@ extension DeploymentDescriptorGenerator {
         // Generate the resources property
         let propertyDecl = VariableDeclSyntax(bindingSpecifier: .keyword(.let)) {
             PatternBindingSyntax(
-                pattern: PatternSyntax(stringLiteral: name.toSwiftLabelCase()),
+                pattern: PatternSyntax(stringLiteral: name.toSwiftVariableCase()),
                 typeAnnotation: TypeAnnotationSyntax(
                     colon: .colonToken(trailingTrivia: .space),
                     type: typeAnnotation)

@@ -8,7 +8,7 @@ import SwiftSyntaxBuilder
 
 extension DeploymentDescriptorGenerator {
     func generateEnumPropertyDeclaration(for name: String, with jsonType: JSONType, isRequired: Bool) -> MemberBlockItemListSyntax {
-        let propertyName = name.toSwiftLabelCase()
+        let propertyName = name.toSwiftVariableCase()
         let enumName = name.toSwiftClassCase()
         let enumRawValue = jsonType.enumValues()?.first ?? ""
         let enumCaseName = (enumRawValue.allLetterIsNumeric() ? ("v" + enumRawValue.toSwiftEnumCase()) : enumRawValue.toSwiftEnumCase())
