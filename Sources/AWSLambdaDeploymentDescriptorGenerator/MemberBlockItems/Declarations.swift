@@ -17,8 +17,7 @@ extension DeploymentDescriptorGenerator {
             enumDecls.append(generateEnumDeclaration(for: name, with: jsonType.enumValues() ?? ["No case found!"]))
             decls.append(generateEnumPropertyDeclaration(for: name, with: jsonType, isRequired: isRequired))
         } else {
-            let swiftType = jsonType.swiftType(for: name)
-            decls.append(generateRegularPropertyDeclaration(for: name, with: swiftType, isRequired: isRequired))
+            decls.append(generateRegularPropertyDeclaration(for: name, with: jsonType, isRequired: isRequired))
         }
     }
     

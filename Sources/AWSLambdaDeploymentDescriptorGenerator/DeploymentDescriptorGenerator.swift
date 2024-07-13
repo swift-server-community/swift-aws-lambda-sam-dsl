@@ -112,7 +112,7 @@ extension JSONType {
     }
 
     private func swiftObjectType(for key: String) -> String {
-        if case .object(let objectSchema) = self.subType {
+        if case .object(_) = self.subType {
             let structName = key
 
             return structName
