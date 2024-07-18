@@ -8,6 +8,96 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 
 extension DeploymentDescriptorGenerator {
+    
+   
+    func generatePatternPropertyDeclaration(for name: String, with type: JSONType, isRequired: Bool) -> MemberBlockItemListSyntax {
+        var memberDecls = [MemberBlockItemListSyntax]()
+        var propertyDecls = [VariableDeclSyntax]()
+        var swiftType = type.swiftType(for: name)
+    
+        //TODO: handle regex pattern with function
+        //TODO: handle min,max Properties
+        if let objectSchema = type.object() {
+            if let patternProperties = objectSchema.patternProperties {
+                for (pattern, patternValue) in patternProperties {
+                    if case .anyOf(let jsonTypes) = patternValue {
+                        print("🏓 I am Generate Declaration with 'patternProperties' and 'hasAnyOf' for: \(name)")
+                        memberDecls.append(generateDependsPropertyDeclaration(for: name, with: jsonTypes, isRequired: isRequired))
+                    } else if case .type(let jsonType) = patternValue {
+                        if let stringSchema = jsonType.stringSchema() {
+                           swiftType = "String"
+                            propertyDecls.append(generateDictionaryProperty(for: name, with: swiftType, isRequired: isRequired))
+                            print("🏓 I am Generate Declaration with 'type', 'String' for: \(name)")
+                        } else {
+                            print("🏓 I am Generate Declaration with not handled type yet for: \(name)")
+                        }
+                       
+                    }  else if case .allOf(let jsonTypes) = patternValue {
+                        print("🏓 I am Generate Declaration with 'patternProperties' and 'allOf' for: \(name)")
+                    }
+                }
+
+            } else {
+                let properties = objectSchema.properties ?? [:]
+                let structDecl = generateStructDeclaration(for: name.toSwiftAWSClassCase().toSwiftClassCase(), with: properties, isRequired: type.required)
+                memberDecls.append(MemberBlockItemListSyntax { structDecl }.with(\.leadingTrivia, .newlines(2)))
+                propertyDecls.append(generateDictionaryProperty(for: name, with: swiftType, isRequired: isRequired))
+                print("🏓 I am 'object' for: \(name)")
+            }
+        
+        } else  if let stringSchema = type.stringSchema() {
+            swiftType = "String"
+            print("🏓 I am 'string' for: \(name)")
+        } else  if let reference = type.reference {
+            let referenceType = reference.contains(":") ? reference.toSwiftAWSEnumCase() :
+            String(reference.split(separator: "/").last ?? "unknown")
+            swiftType = referenceType
+            propertyDecls.append(generateDictionaryProperty(for: name, with: swiftType, isRequired: isRequired))
+            print("🏓 I am 'reference' for: \(swiftType)")
+        } else {
+            print("🏓 I am TypeCase and my case is not handled for: \(name)")
+        }
+        print("🏓 I am PatternProperty for: \(name)")
+        return MemberBlockItemListSyntax {
+            
+            for property in propertyDecls {
+                DeclSyntax(property)
+            }
+            for memberDecl in memberDecls {
+                memberDecl
+            }
+        }
+    }
+    
+    func generateDictionaryProperty(for name: String, with swiftType: String, isRequired: Bool) -> VariableDeclSyntax {
+        let typeAnnotation: TypeSyntaxProtocol = isRequired ? TypeSyntax(DictionaryTypeSyntax(
+            leftSquare: .leftSquareToken(),
+            key: TypeSyntax(IdentifierTypeSyntax(name: .identifier("String"))),
+            colon: .colonToken(),
+            value: TypeSyntax(stringLiteral: swiftType),
+            rightSquare: .rightSquareToken()
+        )) : OptionalTypeSyntax(wrappedType: TypeSyntax(DictionaryTypeSyntax(
+            leftSquare: .leftSquareToken(),
+            key: TypeSyntax(IdentifierTypeSyntax(name: .identifier("String"))),
+            colon: .colonToken(),
+            value: TypeSyntax(stringLiteral: swiftType),
+            rightSquare: .rightSquareToken()
+        )))
+
+        let property = VariableDeclSyntax(bindingSpecifier: .keyword(.let)) {
+            PatternBindingSyntax(
+                pattern: PatternSyntax(stringLiteral: name.toSwiftVariableCase()),
+                typeAnnotation: TypeAnnotationSyntax(
+                    colon: .colonToken(trailingTrivia: .space),
+                    type: typeAnnotation
+                )
+            )
+        }
+
+        return property
+    }
+
+    
     func generateResourcesPropertyDeclaration(for name: String, with types: [JSONType], isRequired: Bool) -> MemberBlockItemListSyntax {
         // Generate the Resources enum
         let enumInheritance = InheritanceClauseSyntax {
@@ -104,7 +194,7 @@ extension DeploymentDescriptorGenerator {
                         EnumCaseDeclSyntax {
                             EnumCaseElementListSyntax {
                                 EnumCaseElementSyntax(
-                                    name: .identifier("itemsString"),
+                                    name: .identifier("itemString"),
                                     parameterClause: EnumCaseParameterClauseSyntax(
                                         parameters: EnumCaseParameterListSyntax{
                                             EnumCaseParameterSyntax(

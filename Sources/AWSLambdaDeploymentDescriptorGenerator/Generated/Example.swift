@@ -92,14 +92,10 @@ public struct ServerlessSimpleTablePrimaryKey {
 // GOALS..
 
  1. AnyOf / AllOf ... Done.. ✅ (Some cases needs to be handled inside definitions and nested structs)
- 2. type not supported filter  .. Done..✅
-    type not supported noEcho 😭
+    type not supported noEcho 
  3. coding keys of defenitions //Done..✅
- 5. generate the nested structs of the DeploymentDescriptor .. //Done..✅
     generate the nested structs of the Definitions ...
- 
  6. optionals .. Done.. ✅ (Some cases needs to be handled inside definitions and nested structs)
- 
  7. clean then check every struct missings
 */
 

@@ -9,12 +9,19 @@ import SwiftSyntaxBuilder
 
 extension DeploymentDescriptorGenerator {
    
-    func handleAnyOfCase(name: String, value: JSONUnionType, decls: inout [MemberBlockItemListSyntax], isRequired: Bool) {
-        if case .anyOf(let jsonTypes) = value {
-            if name == "Resources" {
-                print("🧞‍♀️ -------------- \((name))")
-                decls.append(generateResourcesPropertyDeclaration(for: name, with: jsonTypes, isRequired: isRequired))
-            }
-        }
+    func handleAnyOfCase(name: String, types: [JSONType], decls: inout [MemberBlockItemListSyntax], isRequired: Bool) {
+        print("🧞‍♀️ I am 'anyOf' case for: \(name)")
+        decls.append(generateResourcesPropertyDeclaration(for: name, with: types, isRequired: isRequired))
+    }
+    
+    func handleAllOfCase(name: String, types: [JSONUnionType], decls: inout [MemberBlockItemListSyntax], isRequired: Bool) {
+        print("🧞‍♀️ I am 'allOf' case for: \(name)")
+        
+    }
+    
+    func handleTypeCase(name: String, type: JSONType, decls: inout [MemberBlockItemListSyntax], isRequired: Bool) {
+        print("🧞‍♀️ I am 'type' case for: \(name)")
+        decls.append(generatePatternPropertyDeclaration(for: name, with: type, isRequired: isRequired))
+        
     }
 }

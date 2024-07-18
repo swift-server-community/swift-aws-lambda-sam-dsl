@@ -26,40 +26,44 @@ extension DeploymentDescriptorGenerator {
         
         guard let dictionary = dictionary else { return }
         for (name, value) in dictionary {
-            print("➡️ Processing key: \(name)")
+            print("➡️ I am Generate Declaration processing: \(name)")
             let required = isRequired?.contains(name) ?? false
             
             if case .type(let jsonType) = value {
+                print("➡️ I am Generate Declaration with 'type' for: \(name)")
                 // Check for patternProperties
                 if let objectSchema = value.jsonType().object(), let patternProperties = objectSchema.patternProperties {
+                    print("➡️ I am Generate Declaration with 'type' and 'object' and 'patternProperties' for: \(name)")
+                    
                     for (pattern, patternValue) in patternProperties {
-                        print("🥳 Found patternProperty with pattern: \(pattern), value: \(patternValue)")
-                        
-                        // Check for anyOf within patternProperties
-                        if patternValue.hasAnyOf() {
-                            print("🥳 Found anyOf within patternProperty for pattern: \(pattern)")
-                            if case .anyOf(let jsonTypes) = patternValue {
-                                print("🥳 Handling anyOf case for patternProperty with \(jsonTypes.count) elements")
-                                handleAnyOfCase(name: name, value: patternValue, decls: &decls, isRequired: required)
-                                codingKeys.append(name)
-                            }
-                        }  else {
-                            handleTypeCase(name: name, jsonType: jsonType, decls: &decls, enumDecls: &enumDecls,
-                                           isRequired: required)
+                          
+                        if case .anyOf(let jsonTypes) = patternValue {
+                            print("➡️ I am Generate Declaration with 'patternProperties' and 'hasAnyOf' for: \(name)")
+                            handleAnyOfCase(name: name, types: jsonTypes, decls: &decls, isRequired: required)
+                            codingKeys.append(name)
+                        } else if case .type(let jsonTypes) = patternValue {
+                            print("➡️ I am Generate Declaration with 'patternProperties' and 'type' for: \(name)")
+                            handleTypeCase(name: name, type: jsonTypes, decls: &decls, isRequired: required)
+                            codingKeys.append(name)
+                        }  else if case .allOf(let jsonTypes) = patternValue {
+                            print("➡️ I am Generate Declaration with 'patternProperties' and 'allOf' for: \(name)")
+                            handleAllOfCase(name: name, types: jsonTypes, decls: &decls, isRequired: required)
                             codingKeys.append(name)
                         }
                     }
                 } else  if let objectSchema = value.jsonType().stringSchema() {
+                    print("➡️ I am Generate Declaration with 'type' and 'stringSchema' for: \(name)")
                     handleTypeCase(name: name, jsonType: jsonType, decls: &decls, enumDecls: &enumDecls,
                                    isRequired: required)
                     codingKeys.append(name)
                 } else if jsonType.hasEnum() {
+                    print("➡️ I am Generate Declaration with 'type' and 'Enum' for: \(name)")
                     handleTypeCase(name: name, jsonType: jsonType, decls: &decls, enumDecls: &enumDecls,
                                    isRequired: required)
                     codingKeys.append(name)
                 }
             } else {
-                print("❓ No match for key: \(name)")
+                print("➡️ I am Generate Declaration and couldn't found 'type' for: \(name)")
             }
         }
       

@@ -83,7 +83,7 @@ extension DeploymentDescriptorGenerator {
 
         do {
             if try result.writeIfChanged(toFile: filePath) {
-                print("Success Wrote ✅")
+                print("Success Wrote  🥳 🥳 🥳 🥳")
             }
         } catch {
             print("Error writing file: \(error)")
