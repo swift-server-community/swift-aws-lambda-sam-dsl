@@ -62,7 +62,7 @@ public struct ServerlessAPI { //Done..✅
 
 // for each property under a type "object" in definitions, generate a struct :
 // see line 847
-public struct ServerlessSimpleTable {
+public struct ServerlessSimpleTable { //Done..✅
   // each JSON property is a swift property
   let deletionPolicy: String?
   let metadata: MetaData?
@@ -76,14 +76,14 @@ public struct ServerlessSimpleTable {
 
 // this type is defined inline (line 877)
 // the type of its properties are definied in the definitions section (see lines 881, 884, 887)
-public struct ServerlessSimpleTableProperty {
+public struct ServerlessSimpleTableProperty { //Done..✅
   let primaryKey : ServelessSimpleTablePrimaryKey?
   let provisionedThroughput : ServelessSimpleTableProvisionedThroughput?
   let sseSpecification : ServelessSimpleTableSSESpecification?
 }
 
 // this one is defined under defintions (line 904)
-public struct ServerlessSimpleTablePrimaryKey {
+public struct ServerlessSimpleTablePrimaryKey { //Done..✅
   let name: String?
   let type: String
 }
@@ -91,11 +91,14 @@ public struct ServerlessSimpleTablePrimaryKey {
 /*
 // GOALS..
 
- 1. AnyOf / AllOf ... Done.. ✅ (Some cases needs to be handled inside definitions and nested structs)
-    type not supported noEcho 
- 3. coding keys of defenitions //Done..✅
-    generate the nested structs of the Definitions ...
- 6. optionals .. Done.. ✅ (Some cases needs to be handled inside definitions and nested structs)
+ 1. AllOf
+    type not supported noEcho
+    [Any]
+    patternProperties
+    
+
+ 5. optionals exist?
+ 6. all coding keys exist?
  7. clean then check every struct missings
 */
 

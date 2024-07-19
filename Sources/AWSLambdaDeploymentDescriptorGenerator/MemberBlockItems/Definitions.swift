@@ -61,6 +61,7 @@ extension DeploymentDescriptorGenerator {
                     let propertyDecl = generateRegularPropertyDeclaration(for: propertyName, with: jSONType, isRequired: required)
                     memberDecls.append(MemberBlockItemListSyntax { propertyDecl })
                     } else {
+                        //TODO: Could be String, boolean
                     print("🐝 I am Struct Declaration inside 'type' not enum nor refrence: \(propertyName) \n And Has subType: \(jSONType.subType ?? .null)")
                     let swiftType = jSONType.swiftType(for: propertyName)
                     let propertyDecl = generateRegularPropertyDeclaration(for: propertyName, with: jSONType, isRequired: required)
@@ -74,6 +75,11 @@ extension DeploymentDescriptorGenerator {
                 print("🐝 I am Struct Declaration inside 'anyOf' for: \(propertyName)")
                 memberDecls.append(generateDependsPropertyDeclaration(for: propertyName, with: jSONTypes, isRequired: required))
                 codingKeys.append(propertyName)
+            }else if case .allOf(let jSONTypes) = propertyType {
+                print("🐝 I am Struct Declaration inside 'allOf' for: \(propertyName)")
+                memberDecls.append(generateAllOfDeclaration(for: propertyName, with: jSONTypes, isRequired: required))
+                codingKeys.append(propertyName)
+                
             }
         }
         

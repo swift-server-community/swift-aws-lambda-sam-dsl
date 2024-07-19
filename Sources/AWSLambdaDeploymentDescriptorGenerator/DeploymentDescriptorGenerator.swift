@@ -105,7 +105,7 @@ extension JSONType {
         case .integer: "Int"
         case .number: "Double"
         case .boolean: "Bool"
-        case .array: "[\(self.items()?.swiftType(for: key) ?? "Any")]"
+        case .array: "[\( self.hasReference() ? "\(key)" : (self.items()?.swiftType(for: key) ?? "String"))]"
         case .object:  self.hasReference() ? "\(key)" : self.swiftObjectType(for: key)
         default: "not implemented yet ⚠️"
         }

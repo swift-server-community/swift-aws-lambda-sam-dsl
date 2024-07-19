@@ -30,6 +30,7 @@ extension DeploymentDescriptorGenerator {
                             print("🏓 I am Generate Declaration with 'type', 'String' for: \(name)")
                         } else {
                             print("🏓 I am Generate Declaration with not handled type yet for: \(name)")
+                            memberDecls.append(generateDependsPropertyDeclaration(for: name, with: [jsonType], isRequired: isRequired))
                         }
                        
                     }  else if case .allOf(let jsonTypes) = patternValue {
@@ -167,8 +168,11 @@ extension DeploymentDescriptorGenerator {
             InheritedTypeSyntax(type: TypeSyntax("Codable"))
             InheritedTypeSyntax(type: TypeSyntax("Sendable"))
         }
+        
         var memberDecls = [MemberBlockItemListSyntax]()
         var structDecls = [StructDeclSyntax]()
+        var enumName = "items"
+        var enumType = "[String]"
    
         let enumDecl = EnumDeclSyntax(modifiers: DeclModifierListSyntax { DeclModifierSyntax(name: .keyword(.public)) },
                                       name: .identifier(name.toSwiftAWSClassCase().toSwiftClassCase()),
@@ -176,21 +180,52 @@ extension DeploymentDescriptorGenerator {
             MemberBlockItemListSyntax {
                 for jsonType in types {
                     if let arrayType = jsonType.arraySchema() {
-                        EnumCaseDeclSyntax {
-                            EnumCaseElementListSyntax {
-                                EnumCaseElementSyntax(
-                                    name: .identifier("items"),
-                                    parameterClause: EnumCaseParameterClauseSyntax(
-                                        parameters: EnumCaseParameterListSyntax {
-                                            EnumCaseParameterSyntax(
-                                                type: TypeSyntax(IdentifierTypeSyntax(name: .identifier("[String]")))
-                                            )
-                                        }
+                        
+                        if let item = arrayType.items, let stringType = item.stringSchema() {
+//                            print("🛺 I am stringSchema in 'anyof' for: \(name) \n with type: \(item.swiftType(for: name)))")
+                            EnumCaseDeclSyntax {
+                                EnumCaseElementListSyntax {
+                                    EnumCaseElementSyntax(
+                                        name: .identifier("items"),
+                                        parameterClause: EnumCaseParameterClauseSyntax(
+                                            parameters: EnumCaseParameterListSyntax {
+                                                EnumCaseParameterSyntax(
+                                                    type: TypeSyntax(IdentifierTypeSyntax(name: .identifier("[\(item.swiftType(for: name))]")))
+                                                )
+                                            }
+                                        )
                                     )
-                                )
+                                }
                             }
+                            
+                        } else if let reference = arrayType.items?.reference {
+                            let caseName = reference.contains(":") ? reference.toSwiftAWSEnumCase().toSwiftVariableCase() : String(reference.split(separator: "/").last ?? "unknown").toSwiftVariableCase()
+                            
+                            let caseType = reference.contains(":") ? reference.toSwiftAWSEnumCase() : String(reference.split(separator: "/").last ?? "unknown")
+                            EnumCaseDeclSyntax {
+                                EnumCaseElementListSyntax {
+                                    EnumCaseElementSyntax(
+                                        name: .identifier("\(caseName)Items"),
+                                        parameterClause: EnumCaseParameterClauseSyntax(
+                                            parameters: EnumCaseParameterListSyntax {
+                                                EnumCaseParameterSyntax(
+                                                    type: TypeSyntax(IdentifierTypeSyntax(name: .identifier("[\(caseType)]")))
+                                                )
+                                            }
+                                        )
+                                    )
+                                }
+                            }
+
+//                            print("🛺 I am reference in 'anyof' for: \(name) \n with type: \(reference)")
+                        } else {
+//                            print("🛺 I am type not handled in 'anyof' for: \(name)")
                         }
+                   
+              
+                    
                     } else if let stringType = jsonType.stringSchema() {
+                 
                         EnumCaseDeclSyntax {
                             EnumCaseElementListSyntax {
                                 EnumCaseElementSyntax(
@@ -198,29 +233,31 @@ extension DeploymentDescriptorGenerator {
                                     parameterClause: EnumCaseParameterClauseSyntax(
                                         parameters: EnumCaseParameterListSyntax{
                                             EnumCaseParameterSyntax(
-                                                type: TypeSyntax(IdentifierTypeSyntax(name: .identifier("String")))
+                                                type: TypeSyntax(IdentifierTypeSyntax(name: .identifier("\(jsonType.swiftType(for: name))")))
                                             )
                                         }
                                     )
                                 )
                             }
                         }
+          
                         
                     } else if let objectType = jsonType.object() {
-                        EnumCaseDeclSyntax {
-                            EnumCaseElementListSyntax {
-                                EnumCaseElementSyntax(
-                                    name: .identifier("itemObject"),
-                                    parameterClause: EnumCaseParameterClauseSyntax(
-                                        parameters: EnumCaseParameterListSyntax{
-                                            EnumCaseParameterSyntax(
-                                                type: TypeSyntax(IdentifierTypeSyntax(name: .identifier("\(name.toSwiftAWSClassCase().toSwiftClassCase())Object")))
+                      
+                                EnumCaseDeclSyntax {
+                                    EnumCaseElementListSyntax {
+                                        EnumCaseElementSyntax(
+                                            name: .identifier("itemObject"),
+                                            parameterClause: EnumCaseParameterClauseSyntax(
+                                                parameters: EnumCaseParameterListSyntax{
+                                                    EnumCaseParameterSyntax(
+                                                        type: TypeSyntax(IdentifierTypeSyntax(name: .identifier("\(name.toSwiftAWSClassCase().toSwiftClassCase())Object")))
+                                                    )
+                                                }
                                             )
-                                        }
-                                    )
-                                )
-                            }
-                        }
+                                        )
+                                    }
+                                }
                         
                     }  else if let reference = jsonType.reference {
                         
@@ -228,22 +265,24 @@ extension DeploymentDescriptorGenerator {
                         
                         let caseType = reference.contains(":") ? reference.toSwiftAWSEnumCase() : String(reference.split(separator: "/").last ?? "unknown")
                         
-                        let typeAnnotation: TypeSyntaxProtocol = isRequired ? TypeSyntax(IdentifierTypeSyntax(name: .identifier(caseType))) : OptionalTypeSyntax(wrappedType: IdentifierTypeSyntax(name: .identifier(caseType)))
-                        
-                        EnumCaseDeclSyntax {
-                            EnumCaseElementListSyntax {
-                                EnumCaseElementSyntax(
-                                    name: .identifier(caseName),
-                                    parameterClause: EnumCaseParameterClauseSyntax(
-                                        parameters: EnumCaseParameterListSyntax{
-                                            EnumCaseParameterSyntax(
-                                                type: typeAnnotation
+//                        let typeAnnotation: TypeSyntaxProtocol = isRequired ? TypeSyntax(IdentifierTypeSyntax(name: .identifier(caseType))) : OptionalTypeSyntax(wrappedType: IdentifierTypeSyntax(name: .identifier(caseType)))
+                      
+                   
+                                EnumCaseDeclSyntax {
+                                    EnumCaseElementListSyntax {
+                                        EnumCaseElementSyntax(
+                                            name: .identifier(caseName),
+                                            parameterClause: EnumCaseParameterClauseSyntax(
+                                                parameters: EnumCaseParameterListSyntax{
+                                                    EnumCaseParameterSyntax(
+                                                        type: TypeSyntax(IdentifierTypeSyntax(name: .identifier(caseType)))
+                                                    )
+                                                }
                                             )
-                                        }
-                                    )
-                                )
-                            }
-                        }
+                                        )
+                                    }
+                                }
+                      
                     }
                 }
             }.with(\.leadingTrivia, .newlines(1))
@@ -310,6 +349,8 @@ extension DeploymentDescriptorGenerator {
             memberDecls.append(MemberBlockItemListSyntax{ structDecl })
         }
         
+     
+        
         // Return the combined declarations
         return MemberBlockItemListSyntax {
             for memberDecl in memberDecls {
@@ -318,6 +359,35 @@ extension DeploymentDescriptorGenerator {
         }
     }
 
+    func generateAllOfDeclaration(for name: String, with unionTypes: [JSONUnionType], isRequired: Bool) -> MemberBlockItemListSyntax {
+        var memberDecls = [MemberBlockItemListSyntax]()
+//        var swiftType = type.swiftType(for: name)
+        
+        for type in unionTypes {
+            if case .anyOf(let jsonTypes) = type {
+                print("✈️ I am Generate Allof Declaration with 'anyOf'': \(name)")
+//                handleAnyOfCase(name: name, types: jsonTypes, decls: &decls, isRequired: required)
+//                codingKeys.append(name)
+            } else  if case .type(let jSONType) = type {
+               
+                if let objectSchema = jSONType.object(), let properties = objectSchema.properties {
+                    let structDecl = generateStructDeclaration(for: name.toSwiftAWSClassCase().toSwiftClassCase(),
+                                                               with: properties, isRequired: jSONType.required)
+                    memberDecls.append(MemberBlockItemListSyntax { structDecl })
+                    print("✈️ I am Generate Allof Declaration with 'type'': \(name)")
+                }
+                
+            }
+        }
+
+        
+        return MemberBlockItemListSyntax {
+    
+            for memberDecl in memberDecls {
+                memberDecl
+            }
+        }
+    }
     
 
     

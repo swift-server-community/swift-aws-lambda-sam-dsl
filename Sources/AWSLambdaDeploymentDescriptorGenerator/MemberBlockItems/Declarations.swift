@@ -45,10 +45,6 @@ extension DeploymentDescriptorGenerator {
                             print("➡️ I am Generate Declaration with 'patternProperties' and 'type' for: \(name)")
                             handleTypeCase(name: name, type: jsonTypes, decls: &decls, isRequired: required)
                             codingKeys.append(name)
-                        }  else if case .allOf(let jsonTypes) = patternValue {
-                            print("➡️ I am Generate Declaration with 'patternProperties' and 'allOf' for: \(name)")
-                            handleAllOfCase(name: name, types: jsonTypes, decls: &decls, isRequired: required)
-                            codingKeys.append(name)
                         }
                     }
                 } else  if let objectSchema = value.jsonType().stringSchema() {

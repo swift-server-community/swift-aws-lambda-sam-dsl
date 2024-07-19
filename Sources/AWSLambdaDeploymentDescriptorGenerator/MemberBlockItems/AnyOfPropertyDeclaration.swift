@@ -14,10 +14,7 @@ extension DeploymentDescriptorGenerator {
         decls.append(generateResourcesPropertyDeclaration(for: name, with: types, isRequired: isRequired))
     }
     
-    func handleAllOfCase(name: String, types: [JSONUnionType], decls: inout [MemberBlockItemListSyntax], isRequired: Bool) {
-        print("🧞‍♀️ I am 'allOf' case for: \(name)")
-        
-    }
+
     
     func handleTypeCase(name: String, type: JSONType, decls: inout [MemberBlockItemListSyntax], isRequired: Bool) {
         print("🧞‍♀️ I am 'type' case for: \(name)")
