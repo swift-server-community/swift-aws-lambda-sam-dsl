@@ -97,7 +97,7 @@ extension JSONType {
     func swiftType(for key: String) -> String {
         guard self.type?.count == 1,
               let t = self.type?[0] else {
-            return "not supported yet ⚠️" // anyOf - allOf
+            return "not supported yet ⚠️"
         }
 
         return switch t {
@@ -110,6 +110,7 @@ extension JSONType {
         default: "not implemented yet ⚠️"
         }
     }
+
 
     private func swiftObjectType(for key: String) -> String {
         if case .object(_) = self.subType {

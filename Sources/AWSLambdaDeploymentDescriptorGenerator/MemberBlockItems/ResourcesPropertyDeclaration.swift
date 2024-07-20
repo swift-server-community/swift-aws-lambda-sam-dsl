@@ -163,6 +163,107 @@ extension DeploymentDescriptorGenerator {
         }
     }
     
+    func generateArrayOfTypesDeclaration(for name: String, with types: [JSONPrimitiveType], isRequired: Bool) -> MemberBlockItemListSyntax {
+        let enumInheritance = InheritanceClauseSyntax {
+            InheritedTypeSyntax(type: TypeSyntax("Codable"))
+            InheritedTypeSyntax(type: TypeSyntax("Sendable"))
+        }
+        
+        var memberDecls = [MemberBlockItemListSyntax]()
+        var structDecls = [StructDeclSyntax]()
+
+   
+        let enumDecl = EnumDeclSyntax(modifiers: DeclModifierListSyntax { DeclModifierSyntax(name: .keyword(.public)) },
+                                      name: .identifier(name.toSwiftAWSClassCase().toSwiftClassCase()),
+                                      inheritanceClause: enumInheritance) {
+            MemberBlockItemListSyntax {
+                for type in types {
+                    switch type {
+                    case .string:
+                        EnumCaseDeclSyntax {
+                            EnumCaseElementListSyntax {
+                                EnumCaseElementSyntax(
+                                    name: .identifier("string"),
+                                    parameterClause: EnumCaseParameterClauseSyntax(
+                                        parameters: EnumCaseParameterListSyntax{
+                                            EnumCaseParameterSyntax(
+                                                type: TypeSyntax(IdentifierTypeSyntax(name: .identifier("String")))
+                                            )
+                                        }
+                                    )
+                                )
+                            }
+                        }
+                    case .boolean:
+                        EnumCaseDeclSyntax {
+                            EnumCaseElementListSyntax {
+                                EnumCaseElementSyntax(
+                                    name: .identifier("boolean"),
+                                    parameterClause: EnumCaseParameterClauseSyntax(
+                                        parameters: EnumCaseParameterListSyntax{
+                                            EnumCaseParameterSyntax(
+                                                type: TypeSyntax(IdentifierTypeSyntax(name: .identifier("Bool")))
+                                            )
+                                        }
+                                    )
+                                )
+                            }
+                        }
+                
+                        
+                    default:
+                        EnumCaseDeclSyntax {
+                            EnumCaseElementListSyntax {
+                                EnumCaseElementSyntax(
+                                    name: .identifier("string"),
+                                    parameterClause: EnumCaseParameterClauseSyntax(
+                                        parameters: EnumCaseParameterListSyntax{
+                                            EnumCaseParameterSyntax(
+                                                type: TypeSyntax(IdentifierTypeSyntax(name: .identifier("String")))
+                                            )
+                                        }
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }.with(\.leadingTrivia, .newlines(1))
+        }.with(\.leadingTrivia, .newlines(2))
+        
+        
+        let typeAnnotation: TypeSyntaxProtocol
+         if isRequired {
+             typeAnnotation = TypeSyntax(stringLiteral: name.toSwiftClassCase())
+         } else {
+             typeAnnotation = OptionalTypeSyntax(wrappedType: TypeSyntax(stringLiteral: name.toSwiftClassCase()))
+         }
+        
+        let propertyDecl = MemberBlockItemSyntax(decl:
+            VariableDeclSyntax(bindingSpecifier: .keyword(.let)) {
+                PatternBindingSyntax(
+                    pattern: PatternSyntax(stringLiteral: name.toSwiftVariableCase()),
+                    typeAnnotation: TypeAnnotationSyntax(type: typeAnnotation)
+                )
+            }
+        )
+        
+
+        memberDecls.append(MemberBlockItemListSyntax{ propertyDecl })
+        memberDecls.append(MemberBlockItemListSyntax{ enumDecl })
+        for structDecl in structDecls {
+            memberDecls.append(MemberBlockItemListSyntax{ structDecl })
+        }
+        
+        
+        // Return the combined declarations
+        return MemberBlockItemListSyntax {
+            for memberDecl in memberDecls {
+                memberDecl
+            }
+        }
+    }
+    
     func generateDependsPropertyDeclaration(for name: String, with types: [JSONType], isRequired: Bool) -> MemberBlockItemListSyntax {
         let enumInheritance = InheritanceClauseSyntax {
             InheritedTypeSyntax(type: TypeSyntax("Codable"))

@@ -66,9 +66,15 @@ extension DeploymentDescriptorGenerator {
             let variableDecl = generateVariableDecl(for: propertyName, with: swiftType, isRequired: isRequired)
             memberDecls.append(MemberBlockItemListSyntax { variableDecl })
         }else {
-            print("🌍 I am Regular Property not 'object' nor 'reference' for: \(name) \n with subType: \(type.subType ?? .null)")
-            let variableDecl = generateVariableDecl(for: propertyName, with: swiftType, isRequired: isRequired)
-            memberDecls.append(MemberBlockItemListSyntax { variableDecl })
+            print("🌍 I am Regular Property not 'object' nor 'reference' for: \(name)")
+            if let arrayOfType = type.type, arrayOfType.count > 1 {
+                print("🌍 I am Regular Property and have arrayOfType for: \(name)")
+                memberDecls.append(generateArrayOfTypesDeclaration(for: propertyName, with: arrayOfType, isRequired: isRequired))
+            } else {
+                let variableDecl = generateVariableDecl(for: propertyName, with: swiftType, isRequired: isRequired)
+                memberDecls.append(MemberBlockItemListSyntax { variableDecl })
+            }
+            
         }
         
         return MemberBlockItemListSyntax {
