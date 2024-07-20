@@ -45,7 +45,27 @@ extension DeploymentDescriptorGenerator {
             swiftType = reference.toSwiftAWSClassCase()
             let variableDecl = generateVariableDecl(for: propertyName, with: swiftType, isRequired: isRequired)
             memberDecls.append(MemberBlockItemListSyntax { variableDecl })
-        } else {
+        } else if let arrayValue = type.arraySchema() {
+            print("🌍 I am Regular Property with 'arraySchema' for: \(name)")
+        
+            if let jsonType = arrayValue.items {
+                if let objectValue = jsonType.object() {
+                    print("🌍 I am object with 'arraySchema' for: \(name)")
+                    let structDecl = generateStructDeclaration(for: name.toSwiftAWSClassCase().toSwiftClassCase(),
+                                                               with: objectValue.properties ?? [:], isRequired: type.required)
+                    memberDecls.append(MemberBlockItemListSyntax { structDecl }.with(\.leadingTrivia, .newlines(2)))
+                    
+                } else if let stringValue = jsonType.stringSchema() {
+                    print("🌍 I am stringValue with 'arraySchema' for: \(name))")
+                    swiftType = "[\(jsonType.swiftType(for: name))]"
+                }
+            } else {
+                swiftType = "[String]"
+                print("🌍 I am 'arraySchema' with no type defined for: \(name)")
+            }
+            let variableDecl = generateVariableDecl(for: propertyName, with: swiftType, isRequired: isRequired)
+            memberDecls.append(MemberBlockItemListSyntax { variableDecl })
+        }else {
             print("🌍 I am Regular Property not 'object' nor 'reference' for: \(name) \n with subType: \(type.subType ?? .null)")
             let variableDecl = generateVariableDecl(for: propertyName, with: swiftType, isRequired: isRequired)
             memberDecls.append(MemberBlockItemListSyntax { variableDecl })
