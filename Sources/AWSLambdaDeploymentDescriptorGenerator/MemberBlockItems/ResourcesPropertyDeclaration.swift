@@ -171,18 +171,17 @@ extension DeploymentDescriptorGenerator {
         
         var memberDecls = [MemberBlockItemListSyntax]()
         var structDecls = [StructDeclSyntax]()
-        var enumName = "items"
-        var enumType = "[String]"
    
         let enumDecl = EnumDeclSyntax(modifiers: DeclModifierListSyntax { DeclModifierSyntax(name: .keyword(.public)) },
                                       name: .identifier(name.toSwiftAWSClassCase().toSwiftClassCase()),
                                       inheritanceClause: enumInheritance) {
             MemberBlockItemListSyntax {
                 for jsonType in types {
+                    
                     if let arrayType = jsonType.arraySchema() {
                         
                         if let item = arrayType.items, let stringType = item.stringSchema() {
-//                            print("🛺 I am stringSchema in 'anyof' for: \(name) \n with type: \(item.swiftType(for: name)))")
+//                            print("🛺 I am stringSchemaArray in 'anyof' for: \(name) \n with type: \(item.swiftType(for: name)))")
                             EnumCaseDeclSyntax {
                                 EnumCaseElementListSyntax {
                                     EnumCaseElementSyntax(
@@ -217,15 +216,13 @@ extension DeploymentDescriptorGenerator {
                                 }
                             }
 
-//                            print("🛺 I am reference in 'anyof' for: \(name) \n with type: \(reference)")
-                        } else {
-//                            print("🛺 I am type not handled in 'anyof' for: \(name)")
+//                            print("🛺 I am referenceArray in 'anyof' for: \(name) \n with type: \(reference)")
                         }
                    
               
                     
                     } else if let stringType = jsonType.stringSchema() {
-                 
+//                        print("🛺 I am string in 'anyof' for: \(name)")
                         EnumCaseDeclSyntax {
                             EnumCaseElementListSyntax {
                                 EnumCaseElementSyntax(
@@ -243,7 +240,7 @@ extension DeploymentDescriptorGenerator {
           
                         
                     } else if let objectType = jsonType.object() {
-                      
+//                        print("🛺 I am object in 'anyof' for: \(name)")
                                 EnumCaseDeclSyntax {
                                     EnumCaseElementListSyntax {
                                         EnumCaseElementSyntax(
@@ -260,13 +257,11 @@ extension DeploymentDescriptorGenerator {
                                 }
                         
                     }  else if let reference = jsonType.reference {
-                        
+//                        print("🛺 I am reference in 'anyof' for: \(name) \n with type: \(reference)")
                         let caseName = reference.contains(":") ? reference.toSwiftAWSEnumCase().toSwiftVariableCase() : String(reference.split(separator: "/").last ?? "unknown").toSwiftVariableCase()
                         
                         let caseType = reference.contains(":") ? reference.toSwiftAWSEnumCase() : String(reference.split(separator: "/").last ?? "unknown")
-                        
-//                        let typeAnnotation: TypeSyntaxProtocol = isRequired ? TypeSyntax(IdentifierTypeSyntax(name: .identifier(caseType))) : OptionalTypeSyntax(wrappedType: IdentifierTypeSyntax(name: .identifier(caseType)))
-                      
+                                              
                    
                                 EnumCaseDeclSyntax {
                                     EnumCaseElementListSyntax {
@@ -360,26 +355,96 @@ extension DeploymentDescriptorGenerator {
     }
 
     func generateAllOfDeclaration(for name: String, with unionTypes: [JSONUnionType], isRequired: Bool) -> MemberBlockItemListSyntax {
+        var variableDecls = [MemberBlockItemListSyntax]()
         var memberDecls = [MemberBlockItemListSyntax]()
-//        var swiftType = type.swiftType(for: name)
+        var codingKeys = [String]()
         
         for type in unionTypes {
             if case .anyOf(let jsonTypes) = type {
                 print("✈️ I am Generate Allof Declaration with 'anyOf'': \(name)")
-//                handleAnyOfCase(name: name, types: jsonTypes, decls: &decls, isRequired: required)
-//                codingKeys.append(name)
+                for jsonType in jsonTypes {
+                    if let properties = jsonType.properties {
+                        print("✈️ I am Generate Allof Declaration with 'properties'': \(name)")
+                        for (propertyName, propertyType) in properties {
+                            if case .type(let jSONType) = propertyType {
+                                let swiftType = jSONType.swiftType(for: propertyName)
+                                let requiredProperty = jSONType.required?.contains(propertyName) ?? false
+                                let propertyDecl = generateRegularPropertyDeclaration(for: propertyName,
+                                                                                      with: jSONType,
+                                                                                      isRequired: requiredProperty)
+                                variableDecls.append(MemberBlockItemListSyntax { propertyDecl })
+                            }  else if case .anyOf(let jSONTypes) = propertyType {
+                                print("✈️ I am Struct Declaration inside 'anyOf' for: \(propertyName)")
+                                let requiredProperty = jSONTypes.compactMap { $0.required }.flatMap { $0 }.contains(propertyName)
+                                variableDecls.append(generateDependsPropertyDeclaration(for: propertyName, with: jSONTypes, isRequired: requiredProperty))
+                            }
+                            codingKeys.append(propertyName)
+                        }
+                    }
+                }
+
             } else  if case .type(let jSONType) = type {
                
                 if let objectSchema = jSONType.object(), let properties = objectSchema.properties {
-                    let structDecl = generateStructDeclaration(for: name.toSwiftAWSClassCase().toSwiftClassCase(),
-                                                               with: properties, isRequired: jSONType.required)
-                    memberDecls.append(MemberBlockItemListSyntax { structDecl })
+                    let (memberDeclsProperties, codingKeysProperties) = processProperties(properties: properties, isRequired: jSONType.required)
+                    
+                    for memberDeclsProperty in memberDeclsProperties {
+                        variableDecls.append(MemberBlockItemListSyntax { memberDeclsProperty })
+                    }
+                    codingKeys.append(contentsOf: codingKeysProperties)
                     print("✈️ I am Generate Allof Declaration with 'type'': \(name)")
                 }
                 
             }
         }
+        variableDecls.append(MemberBlockItemListSyntax { generateEnumCodingKeys(with: codingKeys) })
+        
+        let defaultInheritance = InheritanceClauseSyntax {
+            InheritedTypeSyntax(type: TypeSyntax("Codable"))
+            InheritedTypeSyntax(type: TypeSyntax("Sendable"))
+        }
+        
+        let structDecl = StructDeclSyntax(modifiers: DeclModifierListSyntax { [DeclModifierSyntax(name: .keyword(.public))] },
+                                name: TokenSyntax(stringLiteral: name),
+                                inheritanceClause: defaultInheritance) {
+            MemberBlockItemListSyntax {
+                for variableDecl in variableDecls {
+                    variableDecl
+                }
+            }
+        }
+       
+        
+        let typeAnnotation: TypeSyntaxProtocol
+         if isRequired {
+             typeAnnotation = TypeSyntax(DictionaryTypeSyntax(
+                leftSquare: .leftSquareToken(),
+                key: TypeSyntax(IdentifierTypeSyntax(name: .identifier("String"))),
+                colon: .colonToken(),
+                value: TypeSyntax(stringLiteral: name),
+                rightSquare: .rightSquareToken()
+            ))
+         } else {
+             typeAnnotation = OptionalTypeSyntax(wrappedType: TypeSyntax(DictionaryTypeSyntax(
+                leftSquare: .leftSquareToken(),
+                key: TypeSyntax(IdentifierTypeSyntax(name: .identifier("String"))),
+                colon: .colonToken(),
+                value: TypeSyntax(stringLiteral: name),
+                rightSquare: .rightSquareToken()
+            )))
+         }
+        // Generate the resources property
+        let propertyDecl = VariableDeclSyntax(bindingSpecifier: .keyword(.let)) {
+            PatternBindingSyntax(
+                pattern: PatternSyntax(stringLiteral: name.toSwiftVariableCase()),
+                typeAnnotation: TypeAnnotationSyntax(
+                    colon: .colonToken(trailingTrivia: .space),
+                    type: typeAnnotation)
+            )
+        }
 
+        memberDecls.append(MemberBlockItemListSyntax{ propertyDecl })
+        memberDecls.append(MemberBlockItemListSyntax { structDecl })
         
         return MemberBlockItemListSyntax {
     

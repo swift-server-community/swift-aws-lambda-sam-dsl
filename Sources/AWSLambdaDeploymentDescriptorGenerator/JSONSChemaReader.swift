@@ -190,6 +190,7 @@ public struct JSONType: Decodable, Sendable {
     public let required: [String]?
     public let description: String?
     public let additionalProperties: Bool?
+    public let properties: [String: JSONUnionType]?
     public let enumeration: [String]? //TODO: should be JSONPrimitiveType to match all schema types
 
     public let subType: SubTypeSchema?
@@ -315,6 +316,7 @@ public struct JSONType: Decodable, Sendable {
         case required
         case description
         case additionalProperties
+        case properties
     }
 
     public init(from decoder: any Decoder) throws {
@@ -359,6 +361,7 @@ public struct JSONType: Decodable, Sendable {
         self.description = try container.decodeIfPresent(String.self, forKey: .description)
         self.additionalProperties = try container.decodeIfPresent(Bool.self, forKey: .additionalProperties)
         self.reference = try container.decodeIfPresent(String.self, forKey: .reference)
+        self.properties = try container.decodeIfPresent([String: JSONUnionType].self, forKey: .properties)
     }
 
     // MARK: accessor methods to easily access associated value of TypeSchema
