@@ -34,7 +34,7 @@ let package = Package(
                 .target(name: "AWSLambdaDeploymentDescriptor"),
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
-                .product(name: "Logging", package: "swift-log")
+                .product(name: "Logging", package: "swift-log"),
             ],
             path: "Sources/AWSLambdaDeploymentDescriptorGenerator",
             exclude: ["Generated", "Resources"],

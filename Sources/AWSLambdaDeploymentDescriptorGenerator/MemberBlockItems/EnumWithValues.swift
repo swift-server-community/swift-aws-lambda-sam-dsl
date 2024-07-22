@@ -15,6 +15,8 @@ extension DeploymentDescriptorGenerator {
             InheritedTypeSyntax(type: TypeSyntax("Codable"))
             InheritedTypeSyntax(type: TypeSyntax("Sendable"))
         }
+        self.logger.info("Generating enum declaration for enum: \(enumName)")
+
         let enumDecl = EnumDeclSyntax(modifiers: DeclModifierListSyntax { DeclModifierSyntax(name: .keyword(.public)) },
                                       name: .identifier(enumName),
                                       inheritanceClause: enumInheritance) {
@@ -31,9 +33,9 @@ extension DeploymentDescriptorGenerator {
                                 )
                             )
                         }
-                    }.with(\.leadingTrivia, .newlines(1))
+                    }
                 }
-            }
+            }.with(\.leadingTrivia, .newlines(1))
         }.with(\.leadingTrivia, .newlines(2))
 
         return MemberBlockItemListSyntax { enumDecl }

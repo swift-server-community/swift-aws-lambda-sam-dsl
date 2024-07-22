@@ -1,5 +1,5 @@
 //
-//  Declarations.swift
+//  Properties.swift
 //
 //
 //  Created by Esraa Eid on 03/07/2024.
@@ -15,41 +15,49 @@ extension DeploymentDescriptorGenerator {
         var codingKeys = [String]()
 
         for (propertyName, propertyType) in properties {
-            print("🐝 I am Struct Declaration looping properties for \(propertyName)")
+            self.logger.info("Processing property: \(propertyName)")
+
             let required = isRequired?.contains(propertyName) ?? false
 
             if case .type(let jSONType) = propertyType {
-                print("🐝 I am Struct Declaration inside 'type' of value: \(propertyName)")
+                self.logger.info("Handling 'type' for property: \(propertyName)")
+
                 if propertyType.jsonType().hasEnum() {
-                    print("🐝 I am Struct Declaration inside 'type' hasEnum: \(propertyName)")
+                    self.logger.info("Property \(propertyName) has an enum type")
+
                     memberDecls.append(generateEnumDeclaration(for: propertyName, with: jSONType.enumValues() ?? ["No case found!"]))
                     memberDecls.append(generateEnumPropertyDeclaration(for: propertyName, with: jSONType, isRequired: required))
                 } else if let reference = propertyType.jsonType().reference {
-                    print("🐝 I am Struct Declaration inside 'type' reference: \(propertyName)")
+                    self.logger.info("Property \(propertyName) has a reference type")
+
                     let propertyDecl = generateRegularPropertyDeclaration(for: propertyName,
                                                                           with: propertyType.jsonType(), isRequired: required)
                     memberDecls.append(MemberBlockItemListSyntax { propertyDecl })
                 } else if let objectSchema = jSONType.object(), let patternProperties = objectSchema.patternProperties {
-                    print("🐝 I am Struct Declaration inside 'type' object: \(propertyName)")
+                    self.logger.info("Property \(propertyName) has an object type with pattern properties")
+
                     memberDecls.append(generatePatternPropertyDeclaration(for: propertyName, with: jSONType, isRequired: required))
                 } else if let objectSchema = jSONType.object(), let properties = objectSchema.properties {
-                    print("🐝 I am Struct Declaration inside properties for object and will append struct for that object: \(propertyName)")
+                    self.logger.info("Property \(propertyName) has an object type with properties")
+
                     let swiftType = jSONType.swiftType(for: propertyName)
                     let propertyDecl = generateRegularPropertyDeclaration(for: propertyName, with: jSONType, isRequired: required)
                     memberDecls.append(MemberBlockItemListSyntax { propertyDecl })
                 } else {
-                    print("🐝 I am Struct Declaration inside 'type' not enum nor reference: \(propertyName) \n And Has subType: \(jSONType.subType ?? .null)")
+                    self.logger.info("Property \(propertyName) is of a basic type")
+
                     let swiftType = jSONType.swiftType(for: propertyName)
                     let propertyDecl = generateRegularPropertyDeclaration(for: propertyName, with: jSONType, isRequired: required)
                     memberDecls.append(MemberBlockItemListSyntax { propertyDecl })
                 }
                 codingKeys.append(propertyName)
             } else if case .anyOf(let jSONTypes) = propertyType {
-                print("🐝 I am Struct Declaration inside 'anyOf' for: \(propertyName)")
+                self.logger.info("Property \(propertyName) has 'anyOf' types")
+
                 memberDecls.append(generateAnyOfDeclaration(for: propertyName, with: jSONTypes, isRequired: required))
                 codingKeys.append(propertyName)
             } else if case .allOf(let jSONTypes) = propertyType {
-                print("🐝 I am Struct Declaration inside 'allOf' for: \(propertyName)")
+                self.logger.info("Property \(propertyName) has 'allOf' types")
                 memberDecls.append(generateAllOfDeclaration(for: propertyName, with: jSONTypes, isRequired: required))
                 codingKeys.append(propertyName)
             }

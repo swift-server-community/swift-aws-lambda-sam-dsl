@@ -1,5 +1,8 @@
 
 public struct SAMDeploymentDescriptor: Codable, Sendable {
+    public struct Metadata: Codable, Sendable {}
+
+    let metadata: Metadata?
     let resources: [String: Resources]
 
     public enum Resources: Codable, Sendable {
@@ -9,253 +12,85 @@ public struct SAMDeploymentDescriptor: Codable, Sendable {
         case cloudFormationResource(CloudFormationResource)
     }
 
-    public struct Conditions: Codable, Sendable {
+    public enum AWSTemplateFormatVersion: String, Codable, Sendable {
+        case v2010_09_09 = "2010-09-09"
     }
-    let conditions: [String: Conditions]?
 
-    public struct Globals: Codable, Sendable {
-    }
+    let awsTemplateFormatVersion: AWSTemplateFormatVersion? = .v2010_09_09
+
+    public struct Globals: Codable, Sendable {}
+
     let globals: Globals?
+    let description: String?
+
+    public struct Properties: Codable, Sendable {}
+
+    let properties: Properties?
+    let parameters: [String: Parameter]?
 
     public enum Transform: String, Codable, Sendable {
         case aws_Serverless_2016_10_31 = "AWS::Serverless-2016-10-31"
     }
+
     let transform: Transform? = .aws_Serverless_2016_10_31
-    let description: String?
 
-    public struct Properties: Codable, Sendable {
-    }
-    let properties: Properties?
+    public struct Outputs: Codable, Sendable {}
 
-    public enum AWSTemplateFormatVersion: String, Codable, Sendable {
-        case v2010_09_09 = "2010-09-09"
-    }
-    let awsTemplateFormatVersion: AWSTemplateFormatVersion? = .v2010_09_09
-
-    public struct Outputs: Codable, Sendable {
-    }
     let outputs: [String: Outputs]?
 
-    public struct Metadata: Codable, Sendable {
-    }
-    let metadata: Metadata?
+    public struct Mappings: Codable, Sendable {}
 
-    public struct Mappings: Codable, Sendable {
-    }
     let mappings: [String: Mappings]?
-    let parameters: [String: Parameter]?
+
+    public struct Conditions: Codable, Sendable {}
+
+    let conditions: [String: Conditions]?
 
     private enum CodingKeys: String, CodingKey {
+        case metadata = "Metadata"
         case resources = "Resources"
-        case conditions = "Conditions"
+        case awsTemplateFormatVersion = "AWSTemplateFormatVersion"
         case globals = "Globals"
-        case transform = "Transform"
         case description = "Description"
         case properties = "Properties"
-        case awsTemplateFormatVersion = "AWSTemplateFormatVersion"
-        case outputs = "Outputs"
-        case metadata = "Metadata"
-        case mappings = "Mappings"
         case parameters = "Parameters"
-    }
-}
-
-public struct CloudFormationResource: Codable, Sendable {
-    let type: String
-
-    private enum CodingKeys: String, CodingKey {
-        case type = "Type"
+        case transform = "Transform"
+        case outputs = "Outputs"
+        case mappings = "Mappings"
+        case conditions = "Conditions"
     }
 }
 
 public struct ServerlessApiS3Location: Codable, Sendable {
-    let version: Double?
-    let key: String
     let bucket: String
+    let key: String
+    let version: Double?
 
     private enum CodingKeys: String, CodingKey {
-        case version = "Version"
-        case key = "Key"
         case bucket = "Bucket"
-    }
-}
-
-public struct ServerlessFunction: Codable, Sendable {
-    let deletionPolicy: String?
-
-    public enum `Type`: String, Codable, Sendable {
-        case aws_Serverless_Function = "AWS::Serverless::Function"
-    }
-    let type: `Type` = .aws_Serverless_Function
-
-    public struct Metadata: Codable, Sendable {
-    }
-    let metadata: Metadata?
-    let condition: String?
-    let updateReplacePolicy: String?
-    let properties: [String: Properties]
-    public struct Properties: Codable, Sendable {
-        let inlineCode: String?
-        let codeUri: [String: CodeUri]?
-
-        public enum CodeUri: Codable, Sendable {
-            case item(String)
-            case serverlessFunctionS3Location(ServerlessFunctionS3Location)
-        }
-        let kmsKeyArn: String?
-        let handler: String
-        let environment: ServerlessFunctionFunctionEnvironment?
-        let deadLetterQueue: ServerlessFunctionDeadLetterQueue?
-        let description: String?
-        public struct RoleObject: Codable, Sendable {
-        }
-        let role: [String: Role]?
-
-        public enum Role: Codable, Sendable {
-            case item(String)
-            case itemObject(RoleObject)
-        }
-        let functionName: String?
-        let tracing: String?
-        let runtime: String
-        let policies: [String: Policies]?
-
-        public enum Policies: Codable, Sendable {
-            case item(String)
-            case itemArray([String])
-            case serverlessFunctionIAMPolicyDocument(ServerlessFunctionIAMPolicyDocument)
-            case serverlessFunctionIAMPolicyDocumentArray([ServerlessFunctionIAMPolicyDocument])
-        }
-        let tags: [String: String]?
-        let events: [String: ServerlessFunctionEventSource]?
-        let memorySize: Double?
-        let timeout: Double?
-        let vpcConfig: ServerlessFunctionVpcConfig?
-
-        private enum CodingKeys: String, CodingKey {
-            case inlineCode = "InlineCode"
-            case codeUri = "CodeUri"
-            case kmsKeyArn = "KmsKeyArn"
-            case handler = "Handler"
-            case environment = "Environment"
-            case deadLetterQueue = "DeadLetterQueue"
-            case description = "Description"
-            case role = "Role"
-            case functionName = "FunctionName"
-            case tracing = "Tracing"
-            case runtime = "Runtime"
-            case policies = "Policies"
-            case tags = "Tags"
-            case events = "Events"
-            case memorySize = "MemorySize"
-            case timeout = "Timeout"
-            case vpcConfig = "VpcConfig"
-        }
-    }
-    let dependsOn: [String: DependsOn]?
-
-    public enum DependsOn: Codable, Sendable {
-        case item(String)
-        case itemArray([String])
-    }
-
-    private enum CodingKeys: String, CodingKey {
-        case deletionPolicy = "DeletionPolicy"
-        case type = "Type"
-        case metadata = "Metadata"
-        case condition = "Condition"
-        case updateReplacePolicy = "UpdateReplacePolicy"
-        case properties = "Properties"
-        case dependsOn = "DependsOn"
-    }
-}
-
-public struct ServerlessFunctionEventSource: Codable, Sendable {
-    let properties: [String: Properties]
-
-    public enum Properties: Codable, Sendable {
-        case serverlessFunctionS3Event(ServerlessFunctionS3Event)
-        case serverlessFunctionSNSEvent(ServerlessFunctionSNSEvent)
-        case serverlessFunctionKinesisEvent(ServerlessFunctionKinesisEvent)
-        case serverlessFunctionMSKEvent(ServerlessFunctionMSKEvent)
-        case serverlessFunctionMQEvent(ServerlessFunctionMQEvent)
-        case serverlessFunctionSQSEvent(ServerlessFunctionSQSEvent)
-        case serverlessFunctionDynamoDBEvent(ServerlessFunctionDynamoDBEvent)
-        case serverlessFunctionApiEvent(ServerlessFunctionApiEvent)
-        case serverlessFunctionScheduleEvent(ServerlessFunctionScheduleEvent)
-        case serverlessFunctionCloudWatchEventEvent(ServerlessFunctionCloudWatchEventEvent)
-        case serverlessFunctionEventBridgeRule(ServerlessFunctionEventBridgeRule)
-        case serverlessFunctionLogEvent(ServerlessFunctionLogEvent)
-        case serverlessFunctionIoTRuleEvent(ServerlessFunctionIoTRuleEvent)
-        case serverlessFunctionAlexaSkillEvent(ServerlessFunctionAlexaSkillEvent)
-        case serverlessFunctionCognitoEvent(ServerlessFunctionCognitoEvent)
-    }
-    let type: String
-
-    private enum CodingKeys: String, CodingKey {
-        case properties = "Properties"
-        case type = "Type"
-    }
-}
-
-public struct Tag: Codable, Sendable {
-    public struct ValueObject: Codable, Sendable {
-    }
-    let value: [String: Value]?
-
-    public enum Value: Codable, Sendable {
-        case item(String)
-        case itemObject(ValueObject)
-    }
-    let key: String?
-
-    private enum CodingKeys: String, CodingKey {
-        case value = "Value"
         case key = "Key"
-    }
-}
-
-public struct ServerlessFunctionSQSEvent: Codable, Sendable {
-    public struct QueueObject: Codable, Sendable {
-    }
-    let queue: [String: Queue]
-
-    public enum Queue: Codable, Sendable {
-        case item(String)
-        case itemObject(QueueObject)
-    }
-    let batchSize: Double?
-    let enabled: Bool?
-
-    private enum CodingKeys: String, CodingKey {
-        case queue = "Queue"
-        case batchSize = "BatchSize"
-        case enabled = "Enabled"
+        case version = "Version"
     }
 }
 
 public struct ServerlessFunctionEventBridgeRule: Codable, Sendable {
-    let inputPath: String?
-    let input: String?
-
-    public struct Pattern: Codable, Sendable {
-    }
-    let pattern: Pattern
     let state: String?
+    let ruleName: String?
+    let input: String?
 
     public struct DeadLetterConfig: Codable, Sendable {
         let arn: String?
-        let queueLogicalId: String?
         let type: String?
+        let queueLogicalId: String?
 
         private enum CodingKeys: String, CodingKey {
             case arn = "Arn"
-            case queueLogicalId = "QueueLogicalId"
             case type = "Type"
+            case queueLogicalId = "QueueLogicalId"
         }
     }
+
     let deadLetterConfig: DeadLetterConfig?
-    let ruleName: String?
 
     public struct RetryPolicy: Codable, Sendable {
         let maximumRetryAttempts: Double?
@@ -266,154 +101,40 @@ public struct ServerlessFunctionEventBridgeRule: Codable, Sendable {
             case maximumEventAgeInSeconds = "MaximumEventAgeInSeconds"
         }
     }
+
     let retryPolicy: RetryPolicy?
+    let inputPath: String?
+
+    public struct Pattern: Codable, Sendable {}
+
+    let pattern: Pattern
 
     private enum CodingKeys: String, CodingKey {
-        case inputPath = "InputPath"
-        case input = "Input"
-        case pattern = "Pattern"
         case state = "State"
-        case deadLetterConfig = "DeadLetterConfig"
         case ruleName = "RuleName"
+        case input = "Input"
+        case deadLetterConfig = "DeadLetterConfig"
         case retryPolicy = "RetryPolicy"
+        case inputPath = "InputPath"
+        case pattern = "Pattern"
     }
 }
 
-public struct ServerlessApi: Codable, Sendable {
-
-    public struct Metadata: Codable, Sendable {
-    }
-    let metadata: Metadata?
-    let condition: String?
-    let dependsOn: [String: DependsOn]?
-
-    public enum DependsOn: Codable, Sendable {
-        case item(String)
-        case itemArray([String])
-    }
-    let updateReplacePolicy: String?
-    let deletionPolicy: String?
-
-    public enum `Type`: String, Codable, Sendable {
-        case aws_Serverless_Api = "AWS::Serverless::Api"
-    }
-    let type: `Type` = .aws_Serverless_Api
-
-    public struct Properties: Codable, Sendable {
-        public struct VariablesObject: Codable, Sendable {
-        }
-        let variables: [String: Variables]?
-
-        public enum Variables: Codable, Sendable {
-            case item(String)
-            case itemObject(VariablesObject)
-        }
-        let definitionUri: [String: DefinitionUri]?
-
-        public enum DefinitionUri: Codable, Sendable {
-            case item(String)
-            case serverlessApiS3Location(ServerlessApiS3Location)
-        }
-        let description: String?
-        public struct StageNameObject: Codable, Sendable {
-        }
-        let stageName: [String: StageName]
-
-        public enum StageName: Codable, Sendable {
-            case item(String)
-            case itemObject(StageNameObject)
-        }
-        let name: String?
-        let cacheClusterSize: String?
-        let cacheClusterEnabled: Bool?
-        let tracingEnabled: Bool?
-
-        public struct DefinitionBody: Codable, Sendable {
-        }
-        let definitionBody: DefinitionBody?
-
-        private enum CodingKeys: String, CodingKey {
-            case variables = "Variables"
-            case definitionUri = "DefinitionUri"
-            case description = "Description"
-            case stageName = "StageName"
-            case name = "Name"
-            case cacheClusterSize = "CacheClusterSize"
-            case cacheClusterEnabled = "CacheClusterEnabled"
-            case tracingEnabled = "TracingEnabled"
-            case definitionBody = "DefinitionBody"
-        }
-    }
-    let properties: Properties
+public struct ServerlessFunctionMSKEvent: Codable, Sendable {
+    let stream: String
+    let topics: [String]
+    let startingPosition: String
 
     private enum CodingKeys: String, CodingKey {
-        case metadata = "Metadata"
-        case condition = "Condition"
-        case dependsOn = "DependsOn"
-        case updateReplacePolicy = "UpdateReplacePolicy"
-        case deletionPolicy = "DeletionPolicy"
-        case type = "Type"
-        case properties = "Properties"
-    }
-}
-
-public struct ServerlessFunctionIoTRuleEvent: Codable, Sendable {
-    let sql: String
-    let awsIotSqlVersion: String?
-
-    private enum CodingKeys: String, CodingKey {
-        case sql = "Sql"
-        case awsIotSqlVersion = "AwsIotSqlVersion"
-    }
-}
-
-public struct ServerlessSimpleTable: Codable, Sendable {
-    let condition: String?
-
-    public enum `Type`: String, Codable, Sendable {
-        case aws_Serverless_Simpletable = "AWS::Serverless::SimpleTable"
-    }
-    let type: `Type` = .aws_Serverless_Simpletable
-
-    public struct Metadata: Codable, Sendable {
-    }
-    let metadata: Metadata?
-
-    public struct Properties: Codable, Sendable {
-        let provisionedThroughput: ServerlessSimpleTableProvisionedThroughput?
-        let primaryKey: ServerlessSimpleTablePrimaryKey?
-        let sseSpecification: ServerlessSimpleTableSSESpecification?
-
-        private enum CodingKeys: String, CodingKey {
-            case provisionedThroughput = "ProvisionedThroughput"
-            case primaryKey = "PrimaryKey"
-            case sseSpecification = "SSESpecification"
-        }
-    }
-    let properties: Properties?
-    let dependsOn: [String: DependsOn]?
-
-    public enum DependsOn: Codable, Sendable {
-        case item(String)
-        case itemArray([String])
-    }
-    let updateReplacePolicy: String?
-    let deletionPolicy: String?
-
-    private enum CodingKeys: String, CodingKey {
-        case condition = "Condition"
-        case type = "Type"
-        case metadata = "Metadata"
-        case properties = "Properties"
-        case dependsOn = "DependsOn"
-        case updateReplacePolicy = "UpdateReplacePolicy"
-        case deletionPolicy = "DeletionPolicy"
+        case stream = "Stream"
+        case topics = "Topics"
+        case startingPosition = "StartingPosition"
     }
 }
 
 public struct ServerlessFunctionS3NotificationFilter: Codable, Sendable {
-    public struct S3KeyObject: Codable, Sendable {
-    }
+    public struct S3KeyObject: Codable, Sendable {}
+
     let s3Key: [String: S3Key]
 
     public enum S3Key: Codable, Sendable {
@@ -426,122 +147,261 @@ public struct ServerlessFunctionS3NotificationFilter: Codable, Sendable {
     }
 }
 
-public struct ServerlessFunctionCognitoEvent: Codable, Sendable {
-    public struct UserPoolObject: Codable, Sendable {
-    }
-    let userPool: [String: UserPool]
+public struct ServerlessFunctionMQEvent: Codable, Sendable {
+    let queues: [String]
+    let broker: String
+    let sourceAccessConfigurations: [String]
 
-    public enum UserPool: Codable, Sendable {
-        case item(String)
-        case itemObject(UserPoolObject)
+    private enum CodingKeys: String, CodingKey {
+        case queues = "Queues"
+        case broker = "Broker"
+        case sourceAccessConfigurations = "SourceAccessConfigurations"
     }
-    let trigger: [String: Trigger]
+}
 
-    public enum Trigger: Codable, Sendable {
+public struct ServerlessFunction: Codable, Sendable {
+    let properties: [String: Properties]
+    public struct Properties: Codable, Sendable {
+        let inlineCode: String?
+        let codeUri: [String: CodeUri]?
+
+        public enum CodeUri: Codable, Sendable {
+            case item(String)
+            case serverlessFunctionS3Location(ServerlessFunctionS3Location)
+        }
+
+        let events: [String: ServerlessFunctionEventSource]?
+        let policies: [String: Policies]?
+
+        public enum Policies: Codable, Sendable {
+            case item(String)
+            case itemArray([String])
+            case serverlessFunctionIAMPolicyDocument(ServerlessFunctionIAMPolicyDocument)
+            case serverlessFunctionIAMPolicyDocumentArray([ServerlessFunctionIAMPolicyDocument])
+        }
+
+        let timeout: Double?
+        let tracing: String?
+        public struct RoleObject: Codable, Sendable {}
+
+        let role: [String: Role]?
+
+        public enum Role: Codable, Sendable {
+            case item(String)
+            case itemObject(RoleObject)
+        }
+
+        let deadLetterQueue: ServerlessFunctionDeadLetterQueue?
+        let handler: String
+        let kmsKeyArn: String?
+        let environment: ServerlessFunctionFunctionEnvironment?
+        let runtime: String
+        let description: String?
+        let vpcConfig: ServerlessFunctionVpcConfig?
+        let memorySize: Double?
+        let tags: [String: String]?
+        let functionName: String?
+
+        private enum CodingKeys: String, CodingKey {
+            case inlineCode = "InlineCode"
+            case codeUri = "CodeUri"
+            case events = "Events"
+            case policies = "Policies"
+            case timeout = "Timeout"
+            case tracing = "Tracing"
+            case role = "Role"
+            case deadLetterQueue = "DeadLetterQueue"
+            case handler = "Handler"
+            case kmsKeyArn = "KmsKeyArn"
+            case environment = "Environment"
+            case runtime = "Runtime"
+            case description = "Description"
+            case vpcConfig = "VpcConfig"
+            case memorySize = "MemorySize"
+            case tags = "Tags"
+            case functionName = "FunctionName"
+        }
+    }
+
+    let updateReplacePolicy: String?
+    let condition: String?
+
+    public struct Metadata: Codable, Sendable {}
+
+    let metadata: Metadata?
+
+    public enum `Type`: String, Codable, Sendable {
+        case aws_Serverless_Function = "AWS::Serverless::Function"
+    }
+
+    let type: `Type` = .aws_Serverless_Function
+    let dependsOn: [String: DependsOn]?
+
+    public enum DependsOn: Codable, Sendable {
         case item(String)
         case itemArray([String])
     }
 
+    let deletionPolicy: String?
+
     private enum CodingKeys: String, CodingKey {
-        case userPool = "UserPool"
-        case trigger = "Trigger"
+        case properties = "Properties"
+        case updateReplacePolicy = "UpdateReplacePolicy"
+        case condition = "Condition"
+        case metadata = "Metadata"
+        case type = "Type"
+        case dependsOn = "DependsOn"
+        case deletionPolicy = "DeletionPolicy"
     }
 }
 
-public struct ServerlessSimpleTableSSESpecification: Codable, Sendable {
-    let sseEnabled: Bool
+public struct ServerlessFunctionKinesisEvent: Codable, Sendable {
+    let startingPosition: String
+    let stream: String
+    let enabled: Bool?
+    let batchSize: Double?
 
     private enum CodingKeys: String, CodingKey {
-        case sseEnabled = "SSEEnabled"
+        case startingPosition = "StartingPosition"
+        case stream = "Stream"
+        case enabled = "Enabled"
+        case batchSize = "BatchSize"
     }
 }
 
-public struct ServerlessFunctionFunctionEnvironment: Codable, Sendable {
-    let variables: [String: String]
+public struct ServerlessFunctionS3Event: Codable, Sendable {
+    let events: [String: Events]
+
+    public enum Events: Codable, Sendable {
+        case item(String)
+        case itemArray([String])
+    }
+
+    let filter: ServerlessFunctionS3NotificationFilter?
+    public struct BucketObject: Codable, Sendable {}
+
+    let bucket: [String: Bucket]
+
+    public enum Bucket: Codable, Sendable {
+        case item(String)
+        case itemObject(BucketObject)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case events = "Events"
+        case filter = "Filter"
+        case bucket = "Bucket"
+    }
+}
+
+public struct ServerlessFunctionIoTRuleEvent: Codable, Sendable {
+    let awsIotSqlVersion: String?
+    let sql: String
+
+    private enum CodingKeys: String, CodingKey {
+        case awsIotSqlVersion = "AwsIotSqlVersion"
+        case sql = "Sql"
+    }
+}
+
+public struct ServerlessFunctionCloudWatchEventEvent: Codable, Sendable {
+    let input: String?
+    let eventBusName: String?
+    let inputPath: String?
+
+    public struct Pattern: Codable, Sendable {}
+
+    let pattern: Pattern
+
+    private enum CodingKeys: String, CodingKey {
+        case input = "Input"
+        case eventBusName = "EventBusName"
+        case inputPath = "InputPath"
+        case pattern = "Pattern"
+    }
+}
+
+public struct ServerlessFunctionScheduleEvent: Codable, Sendable {
+    let enabled: Bool?
+    let name: String?
+    let input: String?
+    let description: String?
+    let schedule: String
+
+    private enum CodingKeys: String, CodingKey {
+        case enabled = "Enabled"
+        case name = "Name"
+        case input = "Input"
+        case description = "Description"
+        case schedule = "Schedule"
+    }
+}
+
+public struct ServerlessFunctionAlexaSkillEvent: Codable, Sendable {
+    let variables: [String: String]?
 
     private enum CodingKeys: String, CodingKey {
         case variables = "Variables"
     }
 }
 
-public struct ServerlessFunctionMSKEvent: Codable, Sendable {
-    let stream: String
-    let startingPosition: String
-    let topics: [String]
+public struct ServerlessFunctionVpcConfig: Codable, Sendable {
+    let subnetIds: [String]
+
+    public struct SubnetIdsUsingRef: Codable, Sendable {}
+
+    let subnetIdsUsingRef: [SubnetIdsUsingRef]?
+    let securityGroupIds: [String]
 
     private enum CodingKeys: String, CodingKey {
-        case stream = "Stream"
-        case startingPosition = "StartingPosition"
-        case topics = "Topics"
+        case subnetIds = "SubnetIds"
+        case subnetIdsUsingRef = "SubnetIdsUsingRef"
+        case securityGroupIds = "SecurityGroupIds"
     }
 }
 
-public struct ServerlessFunctionApiEvent: Codable, Sendable {
-    let path: String
-    public struct RestApiIdObject: Codable, Sendable {
-    }
-    let restApiId: [String: RestApiId]?
+public struct ServerlessFunctionLogEvent: Codable, Sendable {
+    let filterPattern: String
+    let logGroupName: String
 
-    public enum RestApiId: Codable, Sendable {
+    private enum CodingKeys: String, CodingKey {
+        case filterPattern = "FilterPattern"
+        case logGroupName = "LogGroupName"
+    }
+}
+
+public struct Tag: Codable, Sendable {
+    public struct ValueObject: Codable, Sendable {}
+
+    let value: [String: Value]?
+
+    public enum Value: Codable, Sendable {
         case item(String)
-        case itemObject(RestApiIdObject)
+        case itemObject(ValueObject)
     }
-    let method: String
+
+    let key: String?
 
     private enum CodingKeys: String, CodingKey {
-        case path = "Path"
-        case restApiId = "RestApiId"
-        case method = "Method"
-    }
-}
-
-public struct ServerlessFunctionSNSEvent: Codable, Sendable {
-    let region: String?
-    let topic: String
-
-    public struct FilterPolicy: Codable, Sendable {
-    }
-    let filterPolicy: FilterPolicy?
-    let filterPolicyScope: String?
-
-    private enum CodingKeys: String, CodingKey {
-        case region = "Region"
-        case topic = "Topic"
-        case filterPolicy = "FilterPolicy"
-        case filterPolicyScope = "FilterPolicyScope"
-    }
-}
-
-public struct ServerlessFunctionCloudWatchEventEvent: Codable, Sendable {
-    let inputPath: String?
-    let input: String?
-    let eventBusName: String?
-
-    public struct Pattern: Codable, Sendable {
-    }
-    let pattern: Pattern
-
-    private enum CodingKeys: String, CodingKey {
-        case inputPath = "InputPath"
-        case input = "Input"
-        case eventBusName = "EventBusName"
-        case pattern = "Pattern"
+        case value = "Value"
+        case key = "Key"
     }
 }
 
 public struct Parameter: Codable, Sendable {
-    let constraintDescription: String?
-    let `default`: String?
-    let maxLength: String?
-    let allowedValues: [String]?
+    let minValue: String?
     let noEcho: NoEcho?
 
     public enum NoEcho: Codable, Sendable {
         case string(String)
         case boolean(Bool)
     }
-    let description: String?
+
     let allowedPattern: String?
+    let minLength: String?
+    let maxLength: String?
+    let description: String?
+    let maxValue: String?
 
     public enum `Type`: String, Codable, Sendable {
         case string = "String"
@@ -569,46 +429,319 @@ public struct Parameter: Codable, Sendable {
         case listAWS_Route53_Hostedzone_Id = "List<AWS::Route53::HostedZone::Id>"
         case listString = "List<String>"
     }
+
     let type: `Type` = .string
-    let minValue: String?
-    let maxValue: String?
-    let minLength: String?
+    let `default`: String?
+    let allowedValues: [String]?
+    let constraintDescription: String?
 
     private enum CodingKeys: String, CodingKey {
-        case constraintDescription = "ConstraintDescription"
-        case `default` = "Default"
-        case maxLength = "MaxLength"
-        case allowedValues = "AllowedValues"
-        case noEcho = "NoEcho"
-        case description = "Description"
-        case allowedPattern = "AllowedPattern"
-        case type = "Type"
         case minValue = "MinValue"
-        case maxValue = "MaxValue"
+        case noEcho = "NoEcho"
+        case allowedPattern = "AllowedPattern"
         case minLength = "MinLength"
+        case maxLength = "MaxLength"
+        case description = "Description"
+        case maxValue = "MaxValue"
+        case type = "Type"
+        case `default` = "Default"
+        case allowedValues = "AllowedValues"
+        case constraintDescription = "ConstraintDescription"
     }
 }
 
-public struct ServerlessFunctionVpcConfig: Codable, Sendable {
-    let subnetIds: [String]
-
-    public struct SubnetIdsUsingRef: Codable, Sendable {
-    }
-    let subnetIdsUsingRef: [SubnetIdsUsingRef]?
-    let securityGroupIds: [String]
+public struct ServerlessFunctionS3Location: Codable, Sendable {
+    let version: Double?
+    let bucket: String
+    let key: String
 
     private enum CodingKeys: String, CodingKey {
-        case subnetIds = "SubnetIds"
-        case subnetIdsUsingRef = "SubnetIdsUsingRef"
-        case securityGroupIds = "SecurityGroupIds"
+        case version = "Version"
+        case bucket = "Bucket"
+        case key = "Key"
     }
 }
 
-public struct ServerlessFunctionAlexaSkillEvent: Codable, Sendable {
-    let variables: [String: String]?
+public struct ServerlessSimpleTable: Codable, Sendable {
+    let deletionPolicy: String?
+
+    public struct Properties: Codable, Sendable {
+        let sseSpecification: ServerlessSimpleTableSSESpecification?
+        let primaryKey: ServerlessSimpleTablePrimaryKey?
+        let provisionedThroughput: ServerlessSimpleTableProvisionedThroughput?
+
+        private enum CodingKeys: String, CodingKey {
+            case sseSpecification = "SSESpecification"
+            case primaryKey = "PrimaryKey"
+            case provisionedThroughput = "ProvisionedThroughput"
+        }
+    }
+
+    let properties: Properties?
+
+    public enum `Type`: String, Codable, Sendable {
+        case aws_Serverless_Simpletable = "AWS::Serverless::SimpleTable"
+    }
+
+    let type: `Type` = .aws_Serverless_Simpletable
+    let updateReplacePolicy: String?
+    let dependsOn: [String: DependsOn]?
+
+    public enum DependsOn: Codable, Sendable {
+        case item(String)
+        case itemArray([String])
+    }
+
+    public struct Metadata: Codable, Sendable {}
+
+    let metadata: Metadata?
+    let condition: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case deletionPolicy = "DeletionPolicy"
+        case properties = "Properties"
+        case type = "Type"
+        case updateReplacePolicy = "UpdateReplacePolicy"
+        case dependsOn = "DependsOn"
+        case metadata = "Metadata"
+        case condition = "Condition"
+    }
+}
+
+public struct ServerlessFunctionApiEvent: Codable, Sendable {
+    public struct RestApiIdObject: Codable, Sendable {}
+
+    let restApiId: [String: RestApiId]?
+
+    public enum RestApiId: Codable, Sendable {
+        case item(String)
+        case itemObject(RestApiIdObject)
+    }
+
+    let path: String
+    let method: String
+
+    private enum CodingKeys: String, CodingKey {
+        case restApiId = "RestApiId"
+        case path = "Path"
+        case method = "Method"
+    }
+}
+
+public struct ServerlessFunctionSQSEvent: Codable, Sendable {
+    let enabled: Bool?
+    public struct QueueObject: Codable, Sendable {}
+
+    let queue: [String: Queue]
+
+    public enum Queue: Codable, Sendable {
+        case item(String)
+        case itemObject(QueueObject)
+    }
+
+    let batchSize: Double?
+
+    private enum CodingKeys: String, CodingKey {
+        case enabled = "Enabled"
+        case queue = "Queue"
+        case batchSize = "BatchSize"
+    }
+}
+
+public struct ServerlessApi: Codable, Sendable {
+    let dependsOn: [String: DependsOn]?
+
+    public enum DependsOn: Codable, Sendable {
+        case item(String)
+        case itemArray([String])
+    }
+
+    public struct Metadata: Codable, Sendable {}
+
+    let metadata: Metadata?
+
+    public enum `Type`: String, Codable, Sendable {
+        case aws_Serverless_Api = "AWS::Serverless::Api"
+    }
+
+    let type: `Type` = .aws_Serverless_Api
+
+    public struct Properties: Codable, Sendable {
+        let definitionUri: [String: DefinitionUri]?
+
+        public enum DefinitionUri: Codable, Sendable {
+            case item(String)
+            case serverlessApiS3Location(ServerlessApiS3Location)
+        }
+
+        public struct VariablesObject: Codable, Sendable {}
+
+        let variables: [String: Variables]?
+
+        public enum Variables: Codable, Sendable {
+            case item(String)
+            case itemObject(VariablesObject)
+        }
+
+        let cacheClusterSize: String?
+        let description: String?
+        let tracingEnabled: Bool?
+        let name: String?
+        public struct StageNameObject: Codable, Sendable {}
+
+        let stageName: [String: StageName]
+
+        public enum StageName: Codable, Sendable {
+            case item(String)
+            case itemObject(StageNameObject)
+        }
+
+        public struct DefinitionBody: Codable, Sendable {}
+
+        let definitionBody: DefinitionBody?
+        let cacheClusterEnabled: Bool?
+
+        private enum CodingKeys: String, CodingKey {
+            case definitionUri = "DefinitionUri"
+            case variables = "Variables"
+            case cacheClusterSize = "CacheClusterSize"
+            case description = "Description"
+            case tracingEnabled = "TracingEnabled"
+            case name = "Name"
+            case stageName = "StageName"
+            case definitionBody = "DefinitionBody"
+            case cacheClusterEnabled = "CacheClusterEnabled"
+        }
+    }
+
+    let properties: Properties
+    let deletionPolicy: String?
+    let updateReplacePolicy: String?
+    let condition: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case dependsOn = "DependsOn"
+        case metadata = "Metadata"
+        case type = "Type"
+        case properties = "Properties"
+        case deletionPolicy = "DeletionPolicy"
+        case updateReplacePolicy = "UpdateReplacePolicy"
+        case condition = "Condition"
+    }
+}
+
+public struct ServerlessSimpleTableProvisionedThroughput: Codable, Sendable {
+    let readCapacityUnits: Double?
+    let writeCapacityUnits: Double
+
+    private enum CodingKeys: String, CodingKey {
+        case readCapacityUnits = "ReadCapacityUnits"
+        case writeCapacityUnits = "WriteCapacityUnits"
+    }
+}
+
+public struct ServerlessSimpleTablePrimaryKey: Codable, Sendable {
+    let type: String
+    let name: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case type = "Type"
+        case name = "Name"
+    }
+}
+
+public struct ServerlessFunctionSNSEvent: Codable, Sendable {
+    let topic: String
+
+    public struct FilterPolicy: Codable, Sendable {}
+
+    let filterPolicy: FilterPolicy?
+    let filterPolicyScope: String?
+    let region: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case topic = "Topic"
+        case filterPolicy = "FilterPolicy"
+        case filterPolicyScope = "FilterPolicyScope"
+        case region = "Region"
+    }
+}
+
+public struct ServerlessFunctionEventSource: Codable, Sendable {
+    let properties: [String: Properties]
+
+    public enum Properties: Codable, Sendable {
+        case serverlessFunctionS3Event(ServerlessFunctionS3Event)
+        case serverlessFunctionSNSEvent(ServerlessFunctionSNSEvent)
+        case serverlessFunctionKinesisEvent(ServerlessFunctionKinesisEvent)
+        case serverlessFunctionMSKEvent(ServerlessFunctionMSKEvent)
+        case serverlessFunctionMQEvent(ServerlessFunctionMQEvent)
+        case serverlessFunctionSQSEvent(ServerlessFunctionSQSEvent)
+        case serverlessFunctionDynamoDBEvent(ServerlessFunctionDynamoDBEvent)
+        case serverlessFunctionApiEvent(ServerlessFunctionApiEvent)
+        case serverlessFunctionScheduleEvent(ServerlessFunctionScheduleEvent)
+        case serverlessFunctionCloudWatchEventEvent(ServerlessFunctionCloudWatchEventEvent)
+        case serverlessFunctionEventBridgeRule(ServerlessFunctionEventBridgeRule)
+        case serverlessFunctionLogEvent(ServerlessFunctionLogEvent)
+        case serverlessFunctionIoTRuleEvent(ServerlessFunctionIoTRuleEvent)
+        case serverlessFunctionAlexaSkillEvent(ServerlessFunctionAlexaSkillEvent)
+        case serverlessFunctionCognitoEvent(ServerlessFunctionCognitoEvent)
+    }
+
+    let type: String
+
+    private enum CodingKeys: String, CodingKey {
+        case properties = "Properties"
+        case type = "Type"
+    }
+}
+
+public struct ServerlessFunctionCognitoEvent: Codable, Sendable {
+    public struct UserPoolObject: Codable, Sendable {}
+
+    let userPool: [String: UserPool]
+
+    public enum UserPool: Codable, Sendable {
+        case item(String)
+        case itemObject(UserPoolObject)
+    }
+
+    let trigger: [String: Trigger]
+
+    public enum Trigger: Codable, Sendable {
+        case item(String)
+        case itemArray([String])
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case userPool = "UserPool"
+        case trigger = "Trigger"
+    }
+}
+
+public struct ServerlessFunctionIAMPolicyDocument: Codable, Sendable {
+    public struct Statement: Codable, Sendable {}
+
+    let statement: [Statement]
+
+    private enum CodingKeys: String, CodingKey {
+        case statement = "Statement"
+    }
+}
+
+public struct ServerlessFunctionFunctionEnvironment: Codable, Sendable {
+    let variables: [String: String]
 
     private enum CodingKeys: String, CodingKey {
         case variables = "Variables"
+    }
+}
+
+public struct ServerlessSimpleTableSSESpecification: Codable, Sendable {
+    let sseEnabled: Bool
+
+    private enum CodingKeys: String, CodingKey {
+        case sseEnabled = "SSEEnabled"
     }
 }
 
@@ -622,14 +755,11 @@ public struct ServerlessFunctionDeadLetterQueue: Codable, Sendable {
     }
 }
 
-public struct ServerlessFunctionIAMPolicyDocument: Codable, Sendable {
-
-    public struct Statement: Codable, Sendable {
-    }
-    let statement: [Statement]
+public struct CloudFormationResource: Codable, Sendable {
+    let type: String
 
     private enum CodingKeys: String, CodingKey {
-        case statement = "Statement"
+        case type = "Type"
     }
 }
 
@@ -644,113 +774,5 @@ public struct ServerlessFunctionDynamoDBEvent: Codable, Sendable {
         case startingPosition = "StartingPosition"
         case enabled = "Enabled"
         case stream = "Stream"
-    }
-}
-
-public struct ServerlessSimpleTablePrimaryKey: Codable, Sendable {
-    let type: String
-    let name: String?
-
-    private enum CodingKeys: String, CodingKey {
-        case type = "Type"
-        case name = "Name"
-    }
-}
-
-public struct ServerlessFunctionLogEvent: Codable, Sendable {
-    let filterPattern: String
-    let logGroupName: String
-
-    private enum CodingKeys: String, CodingKey {
-        case filterPattern = "FilterPattern"
-        case logGroupName = "LogGroupName"
-    }
-}
-
-public struct ServerlessSimpleTableProvisionedThroughput: Codable, Sendable {
-    let readCapacityUnits: Double?
-    let writeCapacityUnits: Double
-
-    private enum CodingKeys: String, CodingKey {
-        case readCapacityUnits = "ReadCapacityUnits"
-        case writeCapacityUnits = "WriteCapacityUnits"
-    }
-}
-
-public struct ServerlessFunctionMQEvent: Codable, Sendable {
-    let broker: String
-    let queues: [String]
-    let sourceAccessConfigurations: [String]
-
-    private enum CodingKeys: String, CodingKey {
-        case broker = "Broker"
-        case queues = "Queues"
-        case sourceAccessConfigurations = "SourceAccessConfigurations"
-    }
-}
-
-public struct ServerlessFunctionKinesisEvent: Codable, Sendable {
-    let batchSize: Double?
-    let enabled: Bool?
-    let startingPosition: String
-    let stream: String
-
-    private enum CodingKeys: String, CodingKey {
-        case batchSize = "BatchSize"
-        case enabled = "Enabled"
-        case startingPosition = "StartingPosition"
-        case stream = "Stream"
-    }
-}
-
-public struct ServerlessFunctionS3Event: Codable, Sendable {
-    let filter: ServerlessFunctionS3NotificationFilter?
-    public struct BucketObject: Codable, Sendable {
-    }
-    let bucket: [String: Bucket]
-
-    public enum Bucket: Codable, Sendable {
-        case item(String)
-        case itemObject(BucketObject)
-    }
-    let events: [String: Events]
-
-    public enum Events: Codable, Sendable {
-        case item(String)
-        case itemArray([String])
-    }
-
-    private enum CodingKeys: String, CodingKey {
-        case filter = "Filter"
-        case bucket = "Bucket"
-        case events = "Events"
-    }
-}
-
-public struct ServerlessFunctionScheduleEvent: Codable, Sendable {
-    let schedule: String
-    let input: String?
-    let description: String?
-    let enabled: Bool?
-    let name: String?
-
-    private enum CodingKeys: String, CodingKey {
-        case schedule = "Schedule"
-        case input = "Input"
-        case description = "Description"
-        case enabled = "Enabled"
-        case name = "Name"
-    }
-}
-
-public struct ServerlessFunctionS3Location: Codable, Sendable {
-    let version: Double?
-    let bucket: String
-    let key: String
-
-    private enum CodingKeys: String, CodingKey {
-        case version = "Version"
-        case bucket = "Bucket"
-        case key = "Key"
     }
 }

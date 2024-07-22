@@ -13,6 +13,8 @@ extension DeploymentDescriptorGenerator {
             InheritedTypeSyntax(type: TypeSyntax("String"))
             InheritedTypeSyntax(type: TypeSyntax("CodingKey"))
         }
+        self.logger.info("Generating enum coding keys with values: \(values.joined(separator: ", "))")
+
         let enumDecl = EnumDeclSyntax(modifiers: DeclModifierListSyntax { DeclModifierSyntax(name: .keyword(.private)) },
                                       name: .identifier("CodingKeys"),
                                       inheritanceClause: enumInheritance) {
@@ -32,9 +34,8 @@ extension DeploymentDescriptorGenerator {
                     }
                 }
             }.with(\.leadingTrivia, .newlines(1))
-        }.with(\.leadingTrivia, .newlines(2)) // end of enum
+        }.with(\.leadingTrivia, .newlines(2))
 
         return MemberBlockItemListSyntax { enumDecl }
     }
 }
-

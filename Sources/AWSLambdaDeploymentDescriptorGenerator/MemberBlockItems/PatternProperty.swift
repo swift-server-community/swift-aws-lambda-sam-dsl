@@ -17,28 +17,27 @@ extension DeploymentDescriptorGenerator {
             if let patternProperties = objectSchema.patternProperties {
                 for (pattern, patternValue) in patternProperties {
                     if case .anyOf(let jsonTypes) = patternValue {
-                        print("🏓 I am Generate Declaration with 'patternProperties' and 'hasAnyOf' for: \(name)")
+                        self.logger.info("Generating declaration for pattern property with 'anyOf' for: \(name)")
                         memberDecls.append(self.generateAnyOfDeclaration(for: name, with: jsonTypes, isRequired: isRequired))
                     } else if case .type(let jsonType) = patternValue {
                         if let stringSchema = jsonType.stringSchema() {
                             let swiftType = jsonType.swiftType(for: name)
                             memberDecls.append(MemberBlockItemListSyntax { generateDictionaryVariable(for: name, with: swiftType, isRequired: isRequired) })
-                            print("🏓 I am Generate Declaration with 'type', 'String' for: \(name))")
-                        } else  if let object = jsonType.object() {
+                            self.logger.info("Generating declaration for pattern property with 'type' and 'String' schema for: \(name)")
+                        } else if let object = jsonType.object() {
                             let properties = object.properties ?? [:]
                             let structDecl = generateStructDeclaration(for: name, with: properties, isRequired: type.required)
                             memberDecls.append(MemberBlockItemListSyntax { structDecl }.with(\.leadingTrivia, .newlines(2)))
-                            
+
                             let variableDecl = generateDictionaryVariable(for: name,
                                                                           with: jsonType.swiftType(for: name),
                                                                           isRequired: isRequired)
                             memberDecls.append(MemberBlockItemListSyntax { variableDecl })
-                            print("🏓 I am Generate Declaration with 'object' for: \(name)")
-                            
-                        }  else  if let reference = jsonType.reference {
-                            print("🏓 I am Generate Declaration with 'reference' for: \(name)")
-                            let referenceType = reference.contains(":") ? reference.toSwiftAWSEnumCase() :
-                            String(reference.split(separator: "/").last ?? "unknown")
+                            self.logger.info("Generating struct declaration for pattern property with 'object' schema for: \(name)")
+
+                        } else if let reference = jsonType.reference {
+                            self.logger.info("Generating declaration for pattern property with 'reference' for: \(name)")
+                            let referenceType = reference.toSwiftObject()
                             let variableDecl = generateDictionaryVariable(for: name, with: referenceType, isRequired: isRequired)
                             memberDecls.append(MemberBlockItemListSyntax { variableDecl })
                         }
@@ -47,7 +46,8 @@ extension DeploymentDescriptorGenerator {
             }
         }
 
-        print("🏓 I am PatternProperty for: \(name)")
+        self.logger.info("Finished generating pattern property for: \(name)")
+
         return MemberBlockItemListSyntax {
             for memberDecl in memberDecls {
                 memberDecl

@@ -70,6 +70,20 @@ extension String {
         return capitalizedComponents.joined().replacingOccurrences(of: ".", with: "")
     }
 
+    public func toSwiftObject() -> String {
+        let type = self.contains(":") ? self.toSwiftAWSEnumCase() :
+            String(self.split(separator: "/").last ?? "unknown")
+
+        return type
+    }
+
+    public func toSwiftEnumCaseName() -> String {
+        let caseName = self.contains(":") ? self.toSwiftAWSEnumCase().toSwiftVariableCase() :
+            String(self.split(separator: "/").last ?? "unknown").toSwiftVariableCase()
+
+        return caseName
+    }
+
     public func toSwiftAWSClassCase() -> String {
         let components = self.split(separator: "::")
         guard components.count >= 2 else { return self }
@@ -103,15 +117,14 @@ extension String {
 
     func camelCased(capitalize: Bool, isEnum: Bool = false) -> String {
         var items = self.split(separator: "_")
-        
+
         if let last = items.last, last.isEmpty {
             items.removeLast()
         }
         guard let firstWord = items.first else {
             return self
         }
-        
-        
+
         let firstWordProcessed: String
         if capitalize {
             firstWordProcessed = firstWord.upperFirst()
@@ -124,9 +137,8 @@ extension String {
             }
             return word.capitalized
         }
-        
+
         if isEnum {
-            
             return remainingItems.isEmpty ? firstWordProcessed : firstWordProcessed + "_" + remainingItems.joined(separator: "_")
         } else {
             return firstWordProcessed + remainingItems.joined()

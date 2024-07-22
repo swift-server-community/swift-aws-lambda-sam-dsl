@@ -12,6 +12,8 @@ extension DeploymentDescriptorGenerator {
                                    isRequired: [String]?) -> StructDeclSyntax {
         let (memberDecls, codingKeys) = generateProperties(properties: properties, isRequired: isRequired)
 
+        self.logger.info("Generating struct declaration for: \(name)")
+
         let defaultInheritance = InheritanceClauseSyntax {
             InheritedTypeSyntax(type: TypeSyntax("Codable"))
             InheritedTypeSyntax(type: TypeSyntax("Sendable"))

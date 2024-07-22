@@ -8,6 +8,7 @@ extension DeploymentDescriptorGenerator {
             InheritedTypeSyntax(type: TypeSyntax("Codable"))
             InheritedTypeSyntax(type: TypeSyntax("Sendable"))
         }
+        self.logger.info("Generating array of types declaration for: \(name)")
 
         var memberDecls = [MemberBlockItemListSyntax]()
         var structDecls = [StructDeclSyntax]()
@@ -22,6 +23,10 @@ extension DeploymentDescriptorGenerator {
                         generateEnumCaseDecl(name: "string", type: "String")
                     case .boolean:
                         generateEnumCaseDecl(name: "boolean", type: "Bool")
+                    case .integer:
+                        generateEnumCaseDecl(name: "integer", type: "Int")
+                    case .number:
+                        generateEnumCaseDecl(name: "number", type: "Double")
                     default:
                         generateEnumCaseDecl(name: "string", type: "String")
                     }
@@ -36,8 +41,8 @@ extension DeploymentDescriptorGenerator {
         for structDecl in structDecls {
             memberDecls.append(MemberBlockItemListSyntax { structDecl })
         }
+        self.logger.info("Completed generating array of types declaration for: \(name)")
 
-        // Return the combined declarations
         return MemberBlockItemListSyntax {
             for memberDecl in memberDecls {
                 memberDecl

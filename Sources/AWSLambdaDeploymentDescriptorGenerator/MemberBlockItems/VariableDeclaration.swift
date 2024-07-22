@@ -10,7 +10,8 @@ import SwiftSyntaxBuilder
 extension DeploymentDescriptorGenerator {
     func generateVariableDecl(for name: String, with type: String, isRequired: Bool) -> MemberBlockItemSyntax {
         let typeAnnotation: TypeSyntaxProtocol = isRequired ? TypeSyntax(stringLiteral: type.toSwiftClassCase()) : OptionalTypeSyntax(wrappedType: TypeSyntax(stringLiteral: type.toSwiftClassCase()))
-        print("✅ Generating Variable for: \(name)")
+        self.logger.info("Generating variable declaration for property: \(name)")
+
         return MemberBlockItemSyntax(decl: VariableDeclSyntax(bindingSpecifier: .keyword(.let)) {
             PatternBindingSyntax(
                 pattern: PatternSyntax(stringLiteral: name.toSwiftVariableCase()),
@@ -20,14 +21,12 @@ extension DeploymentDescriptorGenerator {
     }
 
     func generateEnumVariableDecl(for propertyName: String, with enumName: String, isRequired: Bool, enumCaseName: String) -> MemberBlockItemSyntax {
-        // Determine the type annotation based on the required flag
         let typeAnnotation: TypeSyntaxProtocol = isRequired ?
             TypeSyntax(stringLiteral: enumName) :
             OptionalTypeSyntax(wrappedType: TypeSyntax(stringLiteral: enumName))
 
-        print("✅ Generating Enum Variable for: \(propertyName)")
+        self.logger.info("Generating enum variable declaration for property: \(propertyName)")
 
-        // Create the enum property declaration
         return MemberBlockItemSyntax(decl:
             VariableDeclSyntax(bindingSpecifier: .keyword(.let)) {
                 PatternBindingSyntax(
@@ -43,7 +42,7 @@ extension DeploymentDescriptorGenerator {
     }
 
     func generateDictionaryVariable(for name: String, with swiftType: String, isRequired: Bool) -> MemberBlockItemSyntax {
-        print("✅ Generating Dictionary Variable for: \(name)", swiftType)
+        self.logger.info("Generating dictionary variable for: \(name) with type: \(swiftType)")
 
         let typeAnnotation: TypeSyntaxProtocol = isRequired ? TypeSyntax(DictionaryTypeSyntax(
             leftSquare: .leftSquareToken(),

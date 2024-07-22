@@ -1,8 +1,8 @@
 import AWSLambdaDeploymentDescriptor
 import Foundation
+import Logging
 import SwiftSyntax
 import SwiftSyntaxBuilder
-import Logging
 
 @main
 struct DeploymentDescriptorGenerator {
@@ -13,8 +13,9 @@ struct DeploymentDescriptorGenerator {
             .map { String(describing: $0) }
             .joined(separator: "/")
     }
-    var logger = Logging.Logger(label: "DeploymentDescriptorGenerator")
-    
+
+    var logger = Logging.Logger(label: "DDGenerator")
+
     static func main() async throws {
         let fm = FileManager.default
 
@@ -45,7 +46,6 @@ struct DeploymentDescriptorGenerator {
 
         let definitionStructDecls = generateDefinitionsDeclaration(from: schema.definitions)
 
-        // Create a source file syntax
         let source = SourceFileSyntax {
             propertyStructDecl.with(\.leadingTrivia, .newlines(1))
             for decl in definitionStructDecls {
@@ -53,7 +53,6 @@ struct DeploymentDescriptorGenerator {
             }
         }
 
-        // Write to a file
         let renderedStruct = source.formatted().description
         self.writeGeneratedResultToFile(renderedStruct)
     }
@@ -79,7 +78,7 @@ extension DeploymentDescriptorGenerator {
 
         do {
             if try result.writeIfChanged(toFile: filePath) {
-                print("Success Wrote  🥳 🥳 🥳 🥳")
+                print("Success Wrote 🥳")
             }
         } catch {
             print("Error writing file: \(error)")
@@ -93,7 +92,7 @@ extension JSONType {
     func swiftType(for key: String) -> String {
         guard self.type?.count == 1,
               let t = self.type?[0] else {
-            return "not supported yet ⚠️"
+            return "not supported yet"
         }
 
         return switch t {
@@ -103,7 +102,7 @@ extension JSONType {
         case .boolean: "Bool"
         case .array: "[\(self.hasReference() ? "\(key)" : (self.items()?.swiftType(for: key) ?? "String"))]"
         case .object: self.hasReference() ? "\(key)" : self.swiftObjectType(for: key)
-        default: "not implemented yet ⚠️"
+        default: "not implemented yet"
         }
     }
 
