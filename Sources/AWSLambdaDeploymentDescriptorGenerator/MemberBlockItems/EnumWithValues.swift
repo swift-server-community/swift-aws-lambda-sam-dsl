@@ -19,10 +19,9 @@ extension DeploymentDescriptorGenerator {
                                       name: .identifier(enumName),
                                       inheritanceClause: enumInheritance) {
             MemberBlockItemListSyntax {
-                
-                    for value in values {
-                        let caseName = (value.allLetterIsNumeric() ? ("v" + value.toSwiftEnumCase()) : value.toSwiftEnumCase())
-                        EnumCaseDeclSyntax {
+                for value in values {
+                    let caseName = (value.allLetterIsNumeric() ? ("v" + value.toSwiftEnumCase()) : value.toSwiftEnumCase())
+                    EnumCaseDeclSyntax {
                         EnumCaseElementListSyntax {
                             EnumCaseElementSyntax(
                                 name: .identifier(caseName),

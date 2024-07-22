@@ -173,14 +173,13 @@ public enum JSONUnionType: Decodable, Sendable {
 
         return allOf
     }
-    
+
     public func hasAnyOf() -> Bool {
-           if case .anyOf = self {
-               return true
-           }
-           return false
-       }
-    
+        if case .anyOf = self {
+            return true
+        }
+        return false
+    }
 }
 
 // a JSON type
@@ -191,7 +190,7 @@ public struct JSONType: Decodable, Sendable {
     public let description: String?
     public let additionalProperties: Bool?
     public let properties: [String: JSONUnionType]?
-    public let enumeration: [String]? //TODO: should be JSONPrimitiveType to match all schema types
+    public let enumeration: [String]? // TODO: should be JSONPrimitiveType to match all schema types
 
     public let subType: SubTypeSchema?
 
@@ -405,25 +404,24 @@ public struct JSONType: Decodable, Sendable {
     }
 
     public func enumValues() -> [String]? {
-        return self.enumeration
+        self.enumeration
     }
-    
+
     public func hasEnum() -> Bool {
         if let enumValues = self.enumValues(), !enumValues.isEmpty {
             return true
         }
         return false
     }
-    
-    public func hasRequired() -> Bool {
-          if let required = self.required, !required.isEmpty {
-              return true
-          }
-          return false
-      }
-    
-    public func hasReference() -> Bool {
-         return self.reference != nil
-     }
 
+    public func hasRequired() -> Bool {
+        if let required = self.required, !required.isEmpty {
+            return true
+        }
+        return false
+    }
+
+    public func hasReference() -> Bool {
+        self.reference != nil
+    }
 }

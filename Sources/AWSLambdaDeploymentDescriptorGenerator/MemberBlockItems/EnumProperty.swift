@@ -7,28 +7,36 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 
 extension DeploymentDescriptorGenerator {
+    
     func generateEnumPropertyDeclaration(for name: String, with jsonType: JSONType, isRequired: Bool) -> MemberBlockItemListSyntax {
-        let propertyName = name.toSwiftVariableCase()
         let enumName = name.toSwiftClassCase()
         let enumRawValue = jsonType.enumValues()?.first ?? ""
         let enumCaseName = (enumRawValue.allLetterIsNumeric() ? ("v" + enumRawValue.toSwiftEnumCase()) : enumRawValue.toSwiftEnumCase())
-        
-        let typeAnnotation: TypeSyntaxProtocol
-         if isRequired {
-             typeAnnotation = TypeSyntax(stringLiteral: enumName)
-         } else {
-             typeAnnotation = OptionalTypeSyntax(wrappedType: TypeSyntax(stringLiteral: enumName))
-         }
-        
-        let enumPropertyDecl = MemberBlockItemSyntax(decl:
-            VariableDeclSyntax(bindingSpecifier: .keyword(.let)) {
-                PatternBindingSyntax(
-                    pattern: PatternSyntax(stringLiteral: propertyName),
-                    typeAnnotation: TypeAnnotationSyntax(type: typeAnnotation),
-                    initializer: InitializerClauseSyntax(value: ExprSyntax(".\(raw: enumCaseName)"))
+
+        let enumVariableDecl = generateEnumVariableDecl(for: name,
+                                                        with: enumName,
+                                                        isRequired: isRequired,
+                                                        enumCaseName: enumCaseName)
+
+        return MemberBlockItemListSyntax { enumVariableDecl }
+    }
+    
+    
+    func generateEnumCaseDecl(name: String, type: String) -> EnumCaseDeclSyntax {
+        return EnumCaseDeclSyntax {
+            EnumCaseElementListSyntax {
+                EnumCaseElementSyntax(
+                    name: .identifier(name),
+                    parameterClause: EnumCaseParameterClauseSyntax(
+                        parameters: EnumCaseParameterListSyntax {
+                            EnumCaseParameterSyntax(
+                                type: TypeSyntax(IdentifierTypeSyntax(name: .identifier(type)))
+                            )
+                        }
+                    )
                 )
             }
-        )
-        return MemberBlockItemListSyntax { enumPropertyDecl }
+        }
     }
+    
 }

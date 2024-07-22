@@ -2,6 +2,7 @@ import AWSLambdaDeploymentDescriptor
 import Foundation
 import SwiftSyntax
 import SwiftSyntaxBuilder
+import Logging
 
 @main
 struct DeploymentDescriptorGenerator {
@@ -12,7 +13,8 @@ struct DeploymentDescriptorGenerator {
             .map { String(describing: $0) }
             .joined(separator: "/")
     }
-
+    var logger = Logging.Logger(label: "DeploymentDescriptorGenerator")
+    
     static func main() async throws {
         let fm = FileManager.default
 
@@ -35,20 +37,14 @@ struct DeploymentDescriptorGenerator {
         let decoder = JSONDecoder()
         return try decoder.decode(JSONSchema.self, from: schema)
     }
-    
+
     func generate(from schema: JSONSchema) async throws {
-        var propertyDecls = [MemberBlockItemListSyntax]()
-        var propertyEnumDecls = [MemberBlockItemListSyntax]()
-        var propertyCodingKeys = [String]()
-                
+        let propertyStructDecl = generateStructDeclaration(for: "SAMDeploymentDescriptor",
+                                                           with: schema.properties ?? [:],
+                                                           isRequired: schema.required)
 
-        generateDeclarations(from: schema.properties, into: &propertyDecls, enumDecls: &propertyEnumDecls,
-                             codingKeys: &propertyCodingKeys, isRequired: schema.required)
-        propertyEnumDecls.append(generateEnumCodingKeys(with: propertyCodingKeys))
-
-        let propertyStructDecl = generateStructDecl(name: "SAMDeploymentDescriptor", decls: propertyDecls, enumDecls: propertyEnumDecls)
         let definitionStructDecls = generateDefinitionsDeclaration(from: schema.definitions)
-    
+
         // Create a source file syntax
         let source = SourceFileSyntax {
             propertyStructDecl.with(\.leadingTrivia, .newlines(1))
@@ -56,7 +52,7 @@ struct DeploymentDescriptorGenerator {
                 decl.with(\.leadingTrivia, .newlines(2))
             }
         }
-           
+
         // Write to a file
         let renderedStruct = source.formatted().description
         self.writeGeneratedResultToFile(renderedStruct)
@@ -105,15 +101,14 @@ extension JSONType {
         case .integer: "Int"
         case .number: "Double"
         case .boolean: "Bool"
-        case .array: "[\( self.hasReference() ? "\(key)" : (self.items()?.swiftType(for: key) ?? "String"))]"
-        case .object:  self.hasReference() ? "\(key)" : self.swiftObjectType(for: key)
+        case .array: "[\(self.hasReference() ? "\(key)" : (self.items()?.swiftType(for: key) ?? "String"))]"
+        case .object: self.hasReference() ? "\(key)" : self.swiftObjectType(for: key)
         default: "not implemented yet ⚠️"
         }
     }
 
-
     private func swiftObjectType(for key: String) -> String {
-        if case .object(_) = self.subType {
+        if case .object = self.subType {
             let structName = key
 
             return structName

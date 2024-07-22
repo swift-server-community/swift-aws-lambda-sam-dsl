@@ -38,7 +38,7 @@ extension String {
     }
 
     public func toSwiftLabelCase(isEnum: Bool = false) -> String {
-        let snakeCase = self.replacingOccurrences(of: "-", with: "_")
+        let snakeCase = self.replacingOccurrences(of: "-", with: "")
         if snakeCase.allLetterIsSnakeUppercased() {
             return snakeCase.lowercased().camelCased(capitalize: false, isEnum: isEnum)
         }
@@ -59,25 +59,25 @@ extension String {
     public func toSwiftRegionEnumCase() -> String {
         self.replacingOccurrences(of: "-", with: "")
     }
-    
+
     public func toSwiftAWSEnumCase() -> String {
         let components = self.split(separator: "::")
-        guard components.count >= 2 else { return self }        
+        guard components.count >= 2 else { return self }
         let lastTwoComponents = components.suffix(2)
         let capitalizedComponents = lastTwoComponents.map { component in
-            return component.prefix(1).uppercased() + component.dropFirst()
+            component.prefix(1).uppercased() + component.dropFirst()
         }
         return capitalizedComponents.joined().replacingOccurrences(of: ".", with: "")
     }
-    
+
     public func toSwiftAWSClassCase() -> String {
         let components = self.split(separator: "::")
         guard components.count >= 2 else { return self }
         let lastTwoComponents = components.suffix(2)
         let capitalizedComponents = lastTwoComponents.map { component in
-            return component.prefix(1).uppercased() + component.dropFirst()
+            component.prefix(1).uppercased() + component.dropFirst()
         }
-        
+
         return capitalizedComponents.joined().replacingOccurrences(of: ".", with: "")
     }
 
@@ -102,8 +102,16 @@ extension String {
     }
 
     func camelCased(capitalize: Bool, isEnum: Bool = false) -> String {
-        let items = self.split(separator: "_")
-        let firstWord = items.first!
+        var items = self.split(separator: "_")
+        
+        if let last = items.last, last.isEmpty {
+            items.removeLast()
+        }
+        guard let firstWord = items.first else {
+            return self
+        }
+        
+        
         let firstWordProcessed: String
         if capitalize {
             firstWordProcessed = firstWord.upperFirst()
@@ -116,8 +124,10 @@ extension String {
             }
             return word.capitalized
         }
+        
         if isEnum {
-            return firstWordProcessed + "_" + remainingItems.joined(separator: "_")
+            
+            return remainingItems.isEmpty ? firstWordProcessed : firstWordProcessed + "_" + remainingItems.joined(separator: "_")
         } else {
             return firstWordProcessed + remainingItems.joined()
         }
@@ -161,8 +171,8 @@ extension StringProtocol {
     fileprivate func upperFirst() -> String {
         String(self[self.startIndex]).uppercased() + self[index(after: startIndex)...]
     }
-    
-    fileprivate func upperLastWord() -> String {
+
+    private func upperLastWord() -> String {
         guard let lastSeparator = self.lastIndex(of: ":") else {
             return self.upperFirst()
         }

@@ -17,6 +17,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/apple/swift-syntax.git", branch: "main"),
         .package(url: "https://github.com/jpsim/Yams.git", from: "5.1.2"),
+        .package(url: "https://github.com/apple/swift-log.git", from: "1.4.0"),
     ],
     targets: [
         .target(
@@ -33,6 +34,7 @@ let package = Package(
                 .target(name: "AWSLambdaDeploymentDescriptor"),
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
+                .product(name: "Logging", package: "swift-log")
             ],
             path: "Sources/AWSLambdaDeploymentDescriptorGenerator",
             exclude: ["Generated", "Resources"],

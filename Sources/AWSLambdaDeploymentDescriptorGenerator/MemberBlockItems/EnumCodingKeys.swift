@@ -37,3 +37,4 @@ extension DeploymentDescriptorGenerator {
         return MemberBlockItemListSyntax { enumDecl }
     }
 }
+

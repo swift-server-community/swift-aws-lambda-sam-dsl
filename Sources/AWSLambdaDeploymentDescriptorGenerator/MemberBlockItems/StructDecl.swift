@@ -8,22 +8,26 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 
 extension DeploymentDescriptorGenerator {
-    func generateStructDecl(name: String, decls: [MemberBlockItemListSyntax], enumDecls: [MemberBlockItemListSyntax]) -> StructDeclSyntax {
-        
+    func generateStructDeclaration(for name: String, with properties: [String: JSONUnionType],
+                                   isRequired: [String]?) -> StructDeclSyntax {
+        let (memberDecls, codingKeys) = generateProperties(properties: properties, isRequired: isRequired)
+
         let defaultInheritance = InheritanceClauseSyntax {
             InheritedTypeSyntax(type: TypeSyntax("Codable"))
             InheritedTypeSyntax(type: TypeSyntax("Sendable"))
         }
+        let codingKeysEnum = properties.isEmpty ? MemberBlockItemListSyntax {} : generateEnumCodingKeys(with: codingKeys)
+
         return StructDeclSyntax(modifiers: DeclModifierListSyntax { [DeclModifierSyntax(name: .keyword(.public))] },
-                                name: TokenSyntax(stringLiteral: name),
+                                name: TokenSyntax(stringLiteral: name.toSwiftAWSClassCase().toSwiftClassCase()),
                                 inheritanceClause: defaultInheritance) {
             MemberBlockItemListSyntax {
-                for decl in decls {
-                    decl
+                if !(memberDecls.isEmpty) {
+                    for memberDecl in memberDecls {
+                        memberDecl
+                    }
                 }
-                for enumDecl in enumDecls {
-                    enumDecl
-                }
+                codingKeysEnum
             }
         }
     }
