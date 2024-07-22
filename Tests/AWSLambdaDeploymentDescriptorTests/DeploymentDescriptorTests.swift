@@ -18,9 +18,7 @@ import Yams
 
 // this test case tests the generation of the SAM deployment descriptor in JSON
 final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
-
     func testSAMHeader() {
-
         // given
         let expected = expectedSAMHeaders()
 
@@ -30,7 +28,6 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
     }
 
     func testLambdaFunctionResource() {
-
         // given
         let expected = [expectedFunction(), expectedSAMHeaders()].flatMap { $0 }
 
@@ -40,36 +37,32 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
     }
 
     func testLambdaFunctionWithSpecificArchitectures() {
-
         // given
         let expected = [expectedFunction(architecture: ServerlessFunctionProperties.Architectures.x64.rawValue),
                         expectedSAMHeaders()]
-                        .flatMap { $0 }
+            .flatMap { $0 }
 
         // when
         let testDeployment = MockDeploymentDescriptor(withFunction: true,
                                                       architecture: .x64,
                                                       codeURI: self.codeURI)
 
-        // then 
+        // then
         XCTAssertTrue(self.generateAndTestDeploymentDescriptor(deployment: testDeployment,
                                                                expected: expected))
     }
 
     func testAllFunctionProperties() {
-
         // given
         let expected = [Expected.keyValue(indent: 3,
                                           keyValue: ["AutoPublishAliasAllProperties": "true",
-                                                     "AutoPublishAlias" : "alias",
-                                                     "AutoPublishCodeSha256" : "sha256",
-                                                     "Description" : "my function description"
-                                                    ] ),
+                                                     "AutoPublishAlias": "alias",
+                                                     "AutoPublishCodeSha256": "sha256",
+                                                     "Description": "my function description"]),
                         Expected.keyOnly(indent: 3, key: "EphemeralStorage"),
-                        Expected.keyValue(indent: 4, keyValue: ["Size": "1024"])
-        ]
+                        Expected.keyValue(indent: 4, keyValue: ["Size": "1024"])]
 
-        // when                                                     
+        // when
         var functionProperties = ServerlessFunctionProperties(codeUri: self.codeURI, architecture: .arm64)
         functionProperties.autoPublishAliasAllProperties = true
         functionProperties.autoPublishAlias = "alias"
@@ -82,24 +75,24 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
 
         // then
         let testDeployment = MockDeploymentDescriptor(withFunction: false,
-                                                codeURI: self.codeURI,
-                                                additionalResources: [ functionToTest ])
+                                                      codeURI: self.codeURI,
+                                                      additionalResources: [functionToTest])
         XCTAssertTrue(self.generateAndTestDeploymentDescriptor(deployment: testDeployment,
                                                                expected: expected))
     }
-    
+
     func testEventInvokeConfig() {
         // given
         let expected = [
             Expected.keyOnly(indent: 3, key: "EventInvokeConfig"),
             Expected.keyOnly(indent: 4, key: "DestinationConfig"),
             Expected.keyOnly(indent: 5, key: "OnSuccess"),
-            Expected.keyValue(indent: 6, keyValue: ["Type" : "SNS"]),
+            Expected.keyValue(indent: 6, keyValue: ["Type": "SNS"]),
             Expected.keyOnly(indent: 5, key: "OnFailure"),
-            Expected.keyValue(indent: 6, keyValue: ["Destination" : "arn:aws:sqs:eu-central-1:012345678901:lambda-test"]),
-            Expected.keyValue(indent: 6, keyValue: ["Type" : "Lambda"])
+            Expected.keyValue(indent: 6, keyValue: ["Destination": "arn:aws:sqs:eu-central-1:012345678901:lambda-test"]),
+            Expected.keyValue(indent: 6, keyValue: ["Type": "Lambda"]),
         ]
-        
+
         // when
         var functionProperties = ServerlessFunctionProperties(codeUri: self.codeURI, architecture: .arm64)
         let validArn = "arn:aws:sqs:eu-central-1:012345678901:lambda-test"
@@ -110,12 +103,14 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
                                                                                                         type: .lambda)
         let destinations = ServerlessFunctionProperties.EventInvokeConfiguration.EventInvokeDestinationConfiguration(
             onSuccess: destination1,
-            onFailure: destination2)
-        
+            onFailure: destination2
+        )
+
         let invokeConfig = ServerlessFunctionProperties.EventInvokeConfiguration(
             destinationConfig: destinations,
             maximumEventAgeInSeconds: 999,
-            maximumRetryAttempts: 33)
+            maximumRetryAttempts: 33
+        )
         functionProperties.eventInvokeConfig = invokeConfig
         let functionToTest = Resource<ResourceType>(type: .function,
                                                     properties: functionProperties,
@@ -123,11 +118,10 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
 
         // then
         let testDeployment = MockDeploymentDescriptor(withFunction: false,
-                                                codeURI: self.codeURI,
-                                                additionalResources: [ functionToTest ])
+                                                      codeURI: self.codeURI,
+                                                      additionalResources: [functionToTest])
         XCTAssertTrue(self.generateAndTestDeploymentDescriptor(deployment: testDeployment,
                                                                expected: expected))
-
     }
 
     func testFileSystemConfig() {
@@ -138,14 +132,14 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
         let expected = [
             Expected.keyOnly(indent: 3, key: "FileSystemConfigs"),
             Expected.arrayKey(indent: 3, key: "Arn", value: validArn),
-            Expected.keyValue(indent: 4, keyValue: ["LocalMountPath" : mount1]),
+            Expected.keyValue(indent: 4, keyValue: ["LocalMountPath": mount1]),
             Expected.arrayKey(indent: 3, key: "Arn", value: validArn),
-            Expected.keyValue(indent: 4, keyValue: ["LocalMountPath" : mount2])
+            Expected.keyValue(indent: 4, keyValue: ["LocalMountPath": mount2]),
         ]
-        
+
         // when
         var functionProperties = ServerlessFunctionProperties(codeUri: self.codeURI, architecture: .arm64)
-        
+
         if let fileSystemConfig1 = ServerlessFunctionProperties.FileSystemConfig(arn: validArn, localMountPath: mount1),
            let fileSystemConfig2 = ServerlessFunctionProperties.FileSystemConfig(arn: validArn, localMountPath: mount2) {
             functionProperties.fileSystemConfigs = [fileSystemConfig1, fileSystemConfig2]
@@ -159,12 +153,12 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
 
         // then
         let testDeployment = MockDeploymentDescriptor(withFunction: false,
-                                                codeURI: self.codeURI,
-                                                additionalResources: [ functionToTest ])
+                                                      codeURI: self.codeURI,
+                                                      additionalResources: [functionToTest])
         XCTAssertTrue(self.generateAndTestDeploymentDescriptor(deployment: testDeployment,
                                                                expected: expected))
     }
-    
+
     func testInvalidFileSystemConfig() {
         // given
         let validArn = "arn:aws:elasticfilesystem:eu-central-1:012345678901:access-point/fsap-abcdef01234567890"
@@ -187,16 +181,16 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
         XCTAssertNil(fileSystemConfig3)
         XCTAssertNotNil(fileSystemConfig4)
     }
-    
+
     func testURLConfig() {
         // given
         let expected = [
             Expected.keyOnly(indent: 3, key: "FunctionUrlConfig"),
-            Expected.keyValue(indent: 4, keyValue: ["AuthType" : "AWS_IAM"]),
-            Expected.keyValue(indent: 4, keyValue: ["InvokeMode" : "BUFFERED"]),
+            Expected.keyValue(indent: 4, keyValue: ["AuthType": "AWS_IAM"]),
+            Expected.keyValue(indent: 4, keyValue: ["InvokeMode": "BUFFERED"]),
             Expected.keyOnly(indent: 4, key: "Cors"),
-            Expected.keyValue(indent: 5, keyValue: ["MaxAge":"99",
-                                                    "AllowCredentials" : "true"]),
+            Expected.keyValue(indent: 5, keyValue: ["MaxAge": "99",
+                                                    "AllowCredentials": "true"]),
             Expected.keyOnly(indent: 5, key: "AllowHeaders"),
             Expected.arrayKey(indent: 5, key: "allowHeaders"),
             Expected.keyOnly(indent: 5, key: "AllowMethods"),
@@ -204,12 +198,12 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
             Expected.keyOnly(indent: 5, key: "AllowOrigins"),
             Expected.arrayKey(indent: 5, key: "allowOrigin"),
             Expected.keyOnly(indent: 5, key: "ExposeHeaders"),
-            Expected.arrayKey(indent: 5, key: "exposeHeaders")
+            Expected.arrayKey(indent: 5, key: "exposeHeaders"),
         ]
-        
+
         // when
         var functionProperties = ServerlessFunctionProperties(codeUri: self.codeURI, architecture: .arm64)
-        
+
         let cors = ServerlessFunctionProperties.URLConfig.Cors(allowCredentials: true,
                                                                allowHeaders: ["allowHeaders"],
                                                                allowMethods: ["allowMethod"],
@@ -227,14 +221,13 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
 
         // then
         let testDeployment = MockDeploymentDescriptor(withFunction: false,
-                                                codeURI: self.codeURI,
-                                                additionalResources: [ functionToTest ])
+                                                      codeURI: self.codeURI,
+                                                      additionalResources: [functionToTest])
         XCTAssertTrue(self.generateAndTestDeploymentDescriptor(deployment: testDeployment,
                                                                expected: expected))
     }
 
     func testSimpleTableResource() {
-
         // given
         let expected = [
             Expected.keyOnly(indent: 0, key: "Resources"),
@@ -244,8 +237,8 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
             Expected.keyOnly(indent: 3, key: "PrimaryKey"),
             Expected.keyValue(indent: 3, keyValue: ["TableName": "TestTable"]),
             Expected.keyValue(indent: 4, keyValue: ["Name": "pk",
-                                                    "Type": "String"])
-            ]
+                                                    "Type": "String"]),
+        ]
 
         let pk = SimpleTableProperties.PrimaryKey(name: "pk", type: "String")
         let props = SimpleTableProperties(primaryKey: pk, tableName: "TestTable")
@@ -256,8 +249,7 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
         // when
         let testDeployment = MockDeploymentDescriptor(withFunction: false,
                                                       codeURI: self.codeURI,
-                                                      additionalResources: [ table ]
-        )
+                                                      additionalResources: [table])
 
         // then
         XCTAssertTrue(self.generateAndTestDeploymentDescriptor(deployment: testDeployment,
@@ -265,7 +257,6 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
     }
 
     func testSQSQueueResource() {
-
         // given
         let expected = expectedQueue()
 
@@ -277,9 +268,7 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
         // when
         let testDeployment = MockDeploymentDescriptor(withFunction: false,
                                                       codeURI: self.codeURI,
-                                                      additionalResources: [ queue ]
-
-        )
+                                                      additionalResources: [queue])
 
         // test
         XCTAssertTrue(self.generateAndTestDeploymentDescriptor(deployment: testDeployment,
@@ -287,24 +276,24 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
     }
 
     func testHttpApiEventSourceCatchAll() {
-
         // given
         let expected = expectedSAMHeaders() +
-        expectedFunction(architecture: ServerlessFunctionProperties.Architectures.defaultArchitecture().rawValue) +
-        [
-            Expected.keyOnly(indent: 4, key: "HttpApiEvent"),
-            Expected.keyValue(indent: 5, keyValue: ["Type": "HttpApi"])
-        ]
+            expectedFunction(architecture: ServerlessFunctionProperties.Architectures.defaultArchitecture().rawValue) +
+            [
+                Expected.keyOnly(indent: 4, key: "HttpApiEvent"),
+                Expected.keyValue(indent: 5, keyValue: ["Type": "HttpApi"]),
+            ]
 
         let httpApi = Resource<EventSourceType>(
-                            type: .httpApi,
-                            properties: nil,
-                            name: "HttpApiEvent")
+            type: .httpApi,
+            properties: nil,
+            name: "HttpApiEvent"
+        )
 
         // when
         let testDeployment = MockDeploymentDescriptor(withFunction: true,
                                                       codeURI: self.codeURI,
-                                                      eventSource: [ httpApi ] )
+                                                      eventSource: [httpApi])
 
         // then
         XCTAssertTrue(self.generateAndTestDeploymentDescriptor(deployment: testDeployment,
@@ -312,29 +301,29 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
     }
 
     func testHttpApiEventSourceSpecific() {
-
         // given
         let expected = expectedSAMHeaders() +
-        expectedFunction(architecture: ServerlessFunctionProperties.Architectures.defaultArchitecture().rawValue) +
-        [
-            Expected.keyOnly(indent: 3, key: "Events"),
-            Expected.keyOnly(indent: 4, key: "HttpApiEvent"),
-            Expected.keyValue(indent: 5, keyValue: ["Type": "HttpApi"]),
-            Expected.keyOnly(indent: 5, key: "Properties"),
-            Expected.keyValue(indent: 6, keyValue: ["Path": "/test",
-                                                    "Method": "GET"])
-        ]
+            expectedFunction(architecture: ServerlessFunctionProperties.Architectures.defaultArchitecture().rawValue) +
+            [
+                Expected.keyOnly(indent: 3, key: "Events"),
+                Expected.keyOnly(indent: 4, key: "HttpApiEvent"),
+                Expected.keyValue(indent: 5, keyValue: ["Type": "HttpApi"]),
+                Expected.keyOnly(indent: 5, key: "Properties"),
+                Expected.keyValue(indent: 6, keyValue: ["Path": "/test",
+                                                        "Method": "GET"]),
+            ]
 
         let props = HttpApiProperties(method: .GET, path: "/test")
         let httpApi = Resource<EventSourceType>(
-                            type: .httpApi,
-                            properties: props,
-                            name: "HttpApiEvent")
+            type: .httpApi,
+            properties: props,
+            name: "HttpApiEvent"
+        )
 
         // when
         let testDeployment = MockDeploymentDescriptor(withFunction: true,
                                                       codeURI: self.codeURI,
-                                                      eventSource: [ httpApi ])
+                                                      eventSource: [httpApi])
 
         // then
         XCTAssertTrue(self.generateAndTestDeploymentDescriptor(deployment: testDeployment,
@@ -342,12 +331,11 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
     }
 
     func testSQSEventSourceWithArn() {
-
         let name = #"arn:aws:sqs:eu-central-1:012345678901:lambda-test"#
         // given
         let expected = expectedSAMHeaders() +
-                       expectedFunction() +
-                       expectedQueueEventSource(arn: name)
+            expectedFunction() +
+            expectedQueueEventSource(arn: name)
 
         let props = SQSEventProperties(byRef: name,
                                        batchSize: 10,
@@ -359,7 +347,7 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
         // when
         let testDeployment = MockDeploymentDescriptor(withFunction: true,
                                                       codeURI: self.codeURI,
-                                                      eventSource: [ queue ] )
+                                                      eventSource: [queue])
 
         // then
         XCTAssertTrue(self.generateAndTestDeploymentDescriptor(deployment: testDeployment,
@@ -367,11 +355,10 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
     }
 
     func testSQSEventSourceWithoutArn() {
-
         // given
-        let expected =  expectedSAMHeaders() +
-                        expectedFunction() +
-                        expectedQueueEventSource(source: "QueueQueueLambdaTest")
+        let expected = expectedSAMHeaders() +
+            expectedFunction() +
+            expectedQueueEventSource(source: "QueueQueueLambdaTest")
 
         let props = SQSEventProperties(byRef: "queue-lambda-test",
                                        batchSize: 10,
@@ -383,7 +370,7 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
         // when
         let testDeployment = MockDeploymentDescriptor(withFunction: true,
                                                       codeURI: self.codeURI,
-                                                      eventSource: [ queue ] )
+                                                      eventSource: [queue])
 
         // then
         XCTAssertTrue(self.generateAndTestDeploymentDescriptor(deployment: testDeployment,
@@ -391,48 +378,44 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
     }
 
     func testEnvironmentVariablesString() {
-
         // given
         let expected = [
             Expected.keyOnly(indent: 3, key: "Environment"),
             Expected.keyOnly(indent: 4, key: "Variables"),
             Expected.keyValue(indent: 4, keyValue: [
                 "TEST2_VAR": "TEST2_VALUE",
-                "TEST1_VAR": "TEST1_VALUE"
-            ])
+                "TEST1_VAR": "TEST1_VALUE",
+            ]),
         ]
 
         let testDeployment = MockDeploymentDescriptor(withFunction: true,
                                                       codeURI: self.codeURI,
                                                       environmentVariable: SAMEnvironmentVariable(["TEST1_VAR": "TEST1_VALUE",
-                                                                                                   "TEST2_VAR": "TEST2_VALUE"]) )
+                                                                                                   "TEST2_VAR": "TEST2_VALUE"]))
 
         XCTAssertTrue(self.generateAndTestDeploymentDescriptor(deployment: testDeployment,
                                                                expected: expected))
-
     }
 
     func testEnvironmentVariablesArray() {
-
         // given
         let expected = [
             Expected.keyOnly(indent: 3, key: "Environment"),
             Expected.keyOnly(indent: 4, key: "Variables"),
             Expected.keyOnly(indent: 5, key: "TEST1_VAR"),
-            Expected.keyValue(indent: 6, keyValue: ["Ref": "TEST1_VALUE"])
+            Expected.keyValue(indent: 6, keyValue: ["Ref": "TEST1_VALUE"]),
         ]
 
         var envVar = SAMEnvironmentVariable()
         envVar.append("TEST1_VAR", ["Ref": "TEST1_VALUE"])
         let testDeployment = MockDeploymentDescriptor(withFunction: true,
                                                       codeURI: self.codeURI,
-                                                      environmentVariable: envVar )
+                                                      environmentVariable: envVar)
         XCTAssertTrue(self.generateAndTestDeploymentDescriptor(deployment: testDeployment,
                                                                expected: expected))
     }
 
     func testEnvironmentVariablesDictionary() {
-
         // given
         let expected = [
             Expected.keyOnly(indent: 3, key: "Environment"),
@@ -440,26 +423,25 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
             Expected.keyOnly(indent: 5, key: "TEST1_VAR"),
             Expected.keyOnly(indent: 6, key: "Fn::GetAtt"),
             Expected.arrayKey(indent: 6, key: "TEST1_VALUE"),
-            Expected.arrayKey(indent: 6, key: "Arn")
+            Expected.arrayKey(indent: 6, key: "Arn"),
         ]
 
         var envVar = SAMEnvironmentVariable()
         envVar.append("TEST1_VAR", ["Fn::GetAtt": ["TEST1_VALUE", "Arn"]])
         let testDeployment = MockDeploymentDescriptor(withFunction: true,
                                                       codeURI: self.codeURI,
-                                                      environmentVariable: envVar )
+                                                      environmentVariable: envVar)
         XCTAssertTrue(self.generateAndTestDeploymentDescriptor(deployment: testDeployment,
                                                                expected: expected))
     }
 
     func testEnvironmentVariablesResource() {
-
         // given
         let expected = [
             Expected.keyOnly(indent: 3, key: "Environment"),
             Expected.keyOnly(indent: 4, key: "Variables"),
             Expected.keyOnly(indent: 5, key: "TEST1_VAR"),
-            Expected.keyValue(indent: 6, keyValue: ["Ref": "LogicalName"])
+            Expected.keyValue(indent: 6, keyValue: ["Ref": "LogicalName"]),
         ]
 
         let props = SQSResourceProperties(queueName: "PhysicalName")
@@ -468,7 +450,7 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
         envVar.append("TEST1_VAR", resource)
         let testDeployment = MockDeploymentDescriptor(withFunction: true,
                                                       codeURI: self.codeURI,
-                                                      environmentVariable: envVar )
+                                                      environmentVariable: envVar)
         XCTAssertTrue(self.generateAndTestDeploymentDescriptor(deployment: testDeployment,
                                                                expected: expected))
     }
@@ -535,5 +517,4 @@ final class DeploymentDescriptorTests: DeploymentDescriptorBaseTest {
         // then
         XCTAssertEqual("event-bridge", arn.service())
     }
-
 }

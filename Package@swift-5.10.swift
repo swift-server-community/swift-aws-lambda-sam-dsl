@@ -15,15 +15,32 @@ let package = Package(
         .library(name: "AWSLambdaDeploymentDescriptor", type: .dynamic, targets: ["AWSLambdaDeploymentDescriptor"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/jpsim/Yams.git", from: "5.1.2")
+        .package(url: "https://github.com/apple/swift-syntax.git", branch: "main"),
+        .package(url: "https://github.com/jpsim/Yams.git", from: "5.1.2"),
+        .package(url: "https://github.com/apple/swift-log.git", from: "1.4.0"),
     ],
     targets: [
         .target(
             name: "AWSLambdaDeploymentDescriptor",
-            dependencies: [ .product(name: "Yams", package: "Yams")],
+            dependencies: [.product(name: "Yams", package: "Yams")],
             path: "Sources/AWSLambdaDeploymentDescriptor",
-           swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
         ),
+
+        // JSON Schema Generator
+        .executableTarget(
+            name: "AWSLambdaDeploymentDescriptorGenerator",
+            dependencies: [
+                .target(name: "AWSLambdaDeploymentDescriptor"),
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxBuilder", package: "swift-syntax"),
+                .product(name: "Logging", package: "swift-log"),
+            ],
+            path: "Sources/AWSLambdaDeploymentDescriptorGenerator",
+            exclude: ["Generated", "Resources"],
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
+        ),
+
         .plugin(
             name: "AWSLambdaDeployer",
             capability: .command(
@@ -39,7 +56,16 @@ let package = Package(
             dependencies: [
                 .byName(name: "AWSLambdaDeploymentDescriptor"),
             ],
-           swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
+        ),
+
+        // test the SAM JSON Schema reader
+        .testTarget(
+            name: "AWSLambdaDeploymentDescriptorGeneratorTests",
+            dependencies: [
+                .byName(name: "AWSLambdaDeploymentDescriptorGenerator"),
+            ],
+            swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
         ),
     ]
 )

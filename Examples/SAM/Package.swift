@@ -18,58 +18,58 @@ import class Foundation.ProcessInfo // needed for CI to test the local version o
 import PackageDescription
 
 let package = Package(
-  name: "swift-aws-lambda-runtime-example",
-  platforms: [
-    .macOS(.v12)
-  ],
-  products: [
-    .executable(name: "HttpApiLambda", targets: ["HttpApiLambda"]),
-    .executable(name: "SQSLambda", targets: ["SQSLambda"]),
-    .executable(name: "UrlLambda", targets: ["UrlLambda"])
-  ],
-  dependencies: [
-    .package(url: "https://github.com/swift-server/swift-aws-lambda-runtime.git", branch: "main"),
-    .package(url: "https://github.com/swift-server/swift-aws-lambda-events.git", branch: "main"),
-    .package(url: "../../../swift-aws-lambda-sam-dsl", branch: "main"), 
-  ],
-  targets: [
-    .executableTarget(
-      name: "HttpApiLambda",
-      dependencies: [
-        .product(name: "AWSLambdaRuntime", package: "swift-aws-lambda-runtime"),
-        .product(name: "AWSLambdaEvents", package: "swift-aws-lambda-events")
-      ],
-      path: "./HttpApiLambda"
-    ),
-    .executableTarget(
-      name: "UrlLambda",
-      dependencies: [
-        .product(name: "AWSLambdaRuntime", package: "swift-aws-lambda-runtime"),
-        .product(name: "AWSLambdaEvents", package: "swift-aws-lambda-events")
-      ],
-      path: "./UrlLambda"
-    ),
-    .executableTarget(
-      name: "SQSLambda",
-      dependencies: [
-        .product(name: "AWSLambdaRuntime", package: "swift-aws-lambda-runtime"),
-        .product(name: "AWSLambdaEvents", package: "swift-aws-lambda-events")
-      ],
-      path: "./SQSLambda"
-    ),
-    .testTarget(
-      name: "LambdaTests",
-      dependencies: [
-        "HttpApiLambda", "SQSLambda",
-        .product(name: "AWSLambdaTesting", package: "swift-aws-lambda-runtime"),
-      ],
-      // testing data 
-      resources: [
-        .process("data/apiv2.json"),
-        .process("data/sqs.json")
-      ]
-    )
-  ]
+    name: "swift-aws-lambda-runtime-example",
+    platforms: [
+        .macOS(.v12),
+    ],
+    products: [
+        .executable(name: "HttpApiLambda", targets: ["HttpApiLambda"]),
+        .executable(name: "SQSLambda", targets: ["SQSLambda"]),
+        .executable(name: "UrlLambda", targets: ["UrlLambda"]),
+    ],
+    dependencies: [
+        .package(url: "https://github.com/swift-server/swift-aws-lambda-runtime.git", branch: "main"),
+        .package(url: "https://github.com/swift-server/swift-aws-lambda-events.git", branch: "main"),
+        .package(url: "../../../swift-aws-lambda-sam-dsl", branch: "main"),
+    ],
+    targets: [
+        .executableTarget(
+            name: "HttpApiLambda",
+            dependencies: [
+                .product(name: "AWSLambdaRuntime", package: "swift-aws-lambda-runtime"),
+                .product(name: "AWSLambdaEvents", package: "swift-aws-lambda-events"),
+            ],
+            path: "./HttpApiLambda"
+        ),
+        .executableTarget(
+            name: "UrlLambda",
+            dependencies: [
+                .product(name: "AWSLambdaRuntime", package: "swift-aws-lambda-runtime"),
+                .product(name: "AWSLambdaEvents", package: "swift-aws-lambda-events"),
+            ],
+            path: "./UrlLambda"
+        ),
+        .executableTarget(
+            name: "SQSLambda",
+            dependencies: [
+                .product(name: "AWSLambdaRuntime", package: "swift-aws-lambda-runtime"),
+                .product(name: "AWSLambdaEvents", package: "swift-aws-lambda-events"),
+            ],
+            path: "./SQSLambda"
+        ),
+        .testTarget(
+            name: "LambdaTests",
+            dependencies: [
+                "HttpApiLambda", "SQSLambda",
+                .product(name: "AWSLambdaTesting", package: "swift-aws-lambda-runtime"),
+            ],
+            // testing data
+            resources: [
+                .process("data/apiv2.json"),
+                .process("data/sqs.json"),
+            ]
+        ),
+    ]
 )
 
 // for CI to test the local version of the library
@@ -77,6 +77,6 @@ if ProcessInfo.processInfo.environment["LAMBDA_USE_LOCAL_DEPS"] != nil {
     package.dependencies = [
         // use local package in ../..
         .package(name: "swift-aws-lambda-runtime", path: "../../../swift-aws-lambda-runtime"),
-        .package(url: "https://github.com/swift-server/swift-aws-lambda-events.git", branch: "main")
+        .package(url: "https://github.com/swift-server/swift-aws-lambda-events.git", branch: "main"),
     ]
 }
