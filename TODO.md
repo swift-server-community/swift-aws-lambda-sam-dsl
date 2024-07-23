@@ -24,3 +24,7 @@
   
   [ ] What is the difference between  
       `RegularProperty` and `Properties`
+
+  [ ] add function header comments 
+
+  [ ] soundness.sh should run without errors
