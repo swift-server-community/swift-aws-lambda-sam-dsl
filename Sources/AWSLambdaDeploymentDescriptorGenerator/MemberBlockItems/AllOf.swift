@@ -1,9 +1,34 @@
+// ===----------------------------------------------------------------------===//
+//
+// This source file is part of the SwiftAWSLambdaRuntime open source project
+//
+// Copyright (c) 2023 Apple Inc. and the SwiftAWSLambdaRuntime project authors
+// Licensed under Apache License v2.0
+//
+// See LICENSE.txt for license information
+// See CONTRIBUTORS.txt for the list of SwiftAWSLambdaRuntime project authors
+//
+// SPDX-License-Identifier: Apache-2.0
+//
+// ===----------------------------------------------------------------------
 
 import Foundation
 import SwiftSyntax
 import SwiftSyntaxBuilder
 
 extension DeploymentDescriptorGenerator {
+    /// Generates a declaration for an 'allOf' type property, handling nested 'anyOf' types and regular properties.
+    ///
+    /// This function processes 'allOf' types, which are a combination of multiple types, potentially including 'anyOf' types.
+    /// It generates the appropriate property declarations, struct declarations, and coding keys.
+    ///
+    /// - Parameters:
+    ///   - name: The name of the property.
+    ///   - unionTypes: An array of `JSONUnionType` representing the types to be included in the 'allOf' declaration.
+    ///   - isRequired: A Boolean value indicating whether the property is required.
+    ///
+    /// - Returns: A `MemberBlockItemListSyntax` containing the declarations for the 'allOf' property.
+    ///
     func generateAllOfDeclaration(for name: String, with unionTypes: [JSONUnionType], isRequired: Bool) -> MemberBlockItemListSyntax {
         var propertyDecls = [MemberBlockItemListSyntax]()
         var memberDecls = [MemberBlockItemListSyntax]()
@@ -50,16 +75,11 @@ extension DeploymentDescriptorGenerator {
                 }
             }
         }
-        propertyDecls.append(MemberBlockItemListSyntax { generateEnumCodingKeys(with: codingKeys) })
-
-        let defaultInheritance = InheritanceClauseSyntax {
-            InheritedTypeSyntax(type: TypeSyntax("Codable"))
-            InheritedTypeSyntax(type: TypeSyntax("Sendable"))
-        }
+        propertyDecls.append(MemberBlockItemListSyntax { generateEnumDeclaration(with: codingKeys, isCodingKeys: true) })
 
         let structDecl = StructDeclSyntax(modifiers: DeclModifierListSyntax { [DeclModifierSyntax(name: .keyword(.public))] },
                                           name: TokenSyntax(stringLiteral: name),
-                                          inheritanceClause: defaultInheritance) {
+                                          inheritanceClause: generateDefaultInheritance()) {
             MemberBlockItemListSyntax {
                 for propertyDecl in propertyDecls {
                     propertyDecl

@@ -1,3 +1,17 @@
+// ===----------------------------------------------------------------------===//
+//
+// This source file is part of the SwiftAWSLambdaRuntime open source project
+//
+// Copyright (c) 2023 Apple Inc. and the SwiftAWSLambdaRuntime project authors
+// Licensed under Apache License v2.0
+//
+// See LICENSE.txt for license information
+// See CONTRIBUTORS.txt for the list of SwiftAWSLambdaRuntime project authors
+//
+// SPDX-License-Identifier: Apache-2.0
+//
+// ===----------------------------------------------------------------------
+
 import AWSLambdaDeploymentDescriptor
 import Foundation
 import Logging
@@ -27,6 +41,7 @@ struct DeploymentDescriptorGenerator {
         guard fm.fileExists(atPath: jsonSchemaPath) else {
             throw GeneratorError.fileNotFound(jsonSchemaPath)
         }
+
         let schema = try ddg.decode(file: jsonSchemaPath)
         print("👉 \(jsonSchemaPath)")
 
@@ -39,6 +54,14 @@ struct DeploymentDescriptorGenerator {
         return try decoder.decode(JSONSchema.self, from: schema)
     }
 
+    /// Asynchronously generates Swift code from a given JSON schema.
+    ///
+    /// This function processes the provided JSON schema to generate Swift structures that represent the schema's properties and definitions.
+    /// It utilizes the `generateStructDeclaration` and `generateDefinitionsDeclaration` functions to create the necessary struct declarations.
+    /// The generated code is formatted and written to a file.
+    ///
+    /// - Parameter schema: The `JSONSchema` object containing the schema to be converted into Swift code.
+    /// - Throws: An error if the schema processing or file writing fails.
     func generate(from schema: JSONSchema) async throws {
         let propertyStructDecl = generateStructDeclaration(for: "SAMDeploymentDescriptor",
                                                            with: schema.properties ?? [:],
@@ -47,9 +70,9 @@ struct DeploymentDescriptorGenerator {
         let definitionStructDecls = generateDefinitionsDeclaration(from: schema.definitions)
 
         let source = SourceFileSyntax {
-            propertyStructDecl.with(\.leadingTrivia, .newlines(1))
+            addLeadingTrivia(to: propertyStructDecl, trivia: generateComment())
             for decl in definitionStructDecls {
-                decl.with(\.leadingTrivia, .newlines(2))
+                addLeadingTrivia(to: decl)
             }
         }
 
@@ -82,37 +105,6 @@ extension DeploymentDescriptorGenerator {
             }
         } catch {
             print("Error writing file: \(error)")
-        }
-    }
-}
-
-// TODO: Move this into JSONSchemaReader..
-extension JSONType {
-    // TODO: should return a type safe value from Swift Syntax library
-    func swiftType(for key: String) -> String {
-        guard self.type?.count == 1,
-              let t = self.type?[0] else {
-            return "not supported yet"
-        }
-
-        return switch t {
-        case .string: self.hasEnum() ? "\(key)" : "String"
-        case .integer: "Int"
-        case .number: "Double"
-        case .boolean: "Bool"
-        case .array: "[\(self.hasReference() ? "\(key)" : (self.items()?.swiftType(for: key) ?? "String"))]"
-        case .object: self.hasReference() ? "\(key)" : self.swiftObjectType(for: key)
-        default: "not implemented yet"
-        }
-    }
-
-    private func swiftObjectType(for key: String) -> String {
-        if case .object = self.subType {
-            let structName = key
-
-            return structName
-        } else {
-            return "[String: Any]"
         }
     }
 }

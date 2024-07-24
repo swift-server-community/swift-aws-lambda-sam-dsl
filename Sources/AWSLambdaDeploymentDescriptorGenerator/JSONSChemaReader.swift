@@ -1,3 +1,17 @@
+// ===----------------------------------------------------------------------===//
+//
+// This source file is part of the SwiftAWSLambdaRuntime open source project
+//
+// Copyright (c) 2023 Apple Inc. and the SwiftAWSLambdaRuntime project authors
+// Licensed under Apache License v2.0
+//
+// See LICENSE.txt for license information
+// See CONTRIBUTORS.txt for the list of SwiftAWSLambdaRuntime project authors
+//
+// SPDX-License-Identifier: Apache-2.0
+//
+// ===----------------------------------------------------------------------
+
 /*
  This struct represent a subset of a JSONSchema
  We focus implementation to specifically decode the SAM Template JSON Schema,
@@ -423,5 +437,33 @@ public struct JSONType: Decodable, Sendable {
 
     public func hasReference() -> Bool {
         self.reference != nil
+    }
+
+    // TODO: should return a type safe value from Swift Syntax library
+    func swiftType(for key: String) -> String {
+        guard self.type?.count == 1,
+              let t = self.type?[0] else {
+            return "not supported yet"
+        }
+
+        return switch t {
+        case .string: self.hasEnum() ? "\(key)" : "String"
+        case .integer: "Int"
+        case .number: "Double"
+        case .boolean: "Bool"
+        case .array: "[\(self.hasReference() ? "\(key)" : (self.items()?.swiftType(for: key) ?? "String"))]"
+        case .object: self.hasReference() ? "\(key)" : self.swiftObjectType(for: key)
+        default: "not implemented yet"
+        }
+    }
+
+    private func swiftObjectType(for key: String) -> String {
+        if case .object = self.subType {
+            let structName = key
+
+            return structName
+        } else {
+            return "[String: Any]"
+        }
     }
 }

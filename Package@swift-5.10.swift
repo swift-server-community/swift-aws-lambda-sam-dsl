@@ -65,6 +65,9 @@ let package = Package(
             dependencies: [
                 .byName(name: "AWSLambdaDeploymentDescriptorGenerator"),
             ],
+            resources: [
+                .copy("Resources/SAMJSONSchema.json"),
+            ],
             swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
         ),
     ]
