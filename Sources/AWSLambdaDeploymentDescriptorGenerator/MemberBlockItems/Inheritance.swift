@@ -16,31 +16,30 @@ import Foundation
 import SwiftSyntax
 import SwiftSyntaxBuilder
 
+
 extension DeploymentDescriptorGenerator {
-    /// Generates the inheritance clause for coding keys.
-    ///
-    /// This function creates an inheritance clause for an enumeration used as coding keys,
-    /// specifying that it inherits from `String` and `CodingKey`.
-    ///
-    /// - Returns: An `InheritanceClauseSyntax` representing the inheritance clause for coding keys.
-    func generateCodingKeysInheritance() -> InheritanceClauseSyntax {
-        InheritanceClauseSyntax {
-            InheritedTypeSyntax(type: TypeSyntax("String"))
-            InheritedTypeSyntax(type: TypeSyntax("CodingKey"))
+
+    /// Represents possible types for inheritance
+    enum InheritanceType: String {
+        case string = "String"
+        case codingKey = "CodingKey"
+        case codable = "Codable"
+        case sendable = "Sendable"
+
+        /// Returns a Swift Format type to represent this inheritance type
+        func typeSyntax() -> TypeSyntax {
+            TypeSyntax(stringLiteral: self.rawValue)
         }
     }
 
-    /// Generates the inheritance clause for an enumeration with a string raw type.
+    /// Generates the inheritance clause.
     ///
-    /// This function creates an inheritance clause for an enumeration that has a string raw type,
-    /// specifying that it inherits from `String`, `Codable`, and `Sendable`.
-    ///
-    /// - Returns: An `InheritanceClauseSyntax` representing the inheritance clause for an enumeration with a string raw type.
-    func generateEnumWithStringInheritance() -> InheritanceClauseSyntax {
+    /// This function creates an inheritance clause f,
+    /// - Parameter for: The list of types to inherit from
+    /// - Returns: An `InheritanceClauseSyntax` representing the inheritance clause for the given list of types.
+    func generateInheritance(for inheritedTypes: [InheritanceType]) -> InheritanceClauseSyntax {
         InheritanceClauseSyntax {
-            InheritedTypeSyntax(type: TypeSyntax("String"))
-            InheritedTypeSyntax(type: TypeSyntax("Codable"))
-            InheritedTypeSyntax(type: TypeSyntax("Sendable"))
+            inheritedTypes.map { InheritedTypeSyntax(type: $0.typeSyntax()) }
         }
     }
 
@@ -51,9 +50,6 @@ extension DeploymentDescriptorGenerator {
     ///
     /// - Returns: An `InheritanceClauseSyntax` representing the default inheritance clause.
     func generateDefaultInheritance() -> InheritanceClauseSyntax {
-        InheritanceClauseSyntax {
-            InheritedTypeSyntax(type: TypeSyntax("Codable"))
-            InheritedTypeSyntax(type: TypeSyntax("Sendable"))
-        }
+        generateInheritance(for: [.codable, .sendable])
     }
 }

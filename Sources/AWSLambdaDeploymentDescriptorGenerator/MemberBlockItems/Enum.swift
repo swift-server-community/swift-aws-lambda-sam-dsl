@@ -29,7 +29,7 @@ extension DeploymentDescriptorGenerator {
     /// - Returns: A `MemberBlockItemListSyntax` representing the generated enumeration declaration.
     func generateEnumDeclaration(for key: String? = nil, with values: [String], isCodingKeys: Bool = false) -> MemberBlockItemListSyntax {
         let enumName = isCodingKeys ? "CodingKeys" : (key?.toSwiftClassCase() ?? "Enum")
-        let enumInheritance = isCodingKeys ? generateCodingKeysInheritance() : generateEnumWithStringInheritance()
+        let enumInheritance = isCodingKeys ? generateInheritance(for: [.string, .codingKey]) : generateInheritance(for: [.string, .codable, .sendable])
         let modifier: DeclModifierSyntax = isCodingKeys ? DeclModifierSyntax(name: .keyword(.private)) : DeclModifierSyntax(name: .keyword(.public))
 
         let loggerMessage = isCodingKeys ? "Generating enum coding keys with values: \(values.joined(separator: ", "))" : "Generating enum declaration for enum: \(enumName)"
