@@ -23,8 +23,7 @@ let package = Package(
         .target(
             name: "AWSLambdaDeploymentDescriptor",
             dependencies: [.product(name: "Yams", package: "Yams")],
-            path: "Sources/AWSLambdaDeploymentDescriptor",
-            swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
+            path: "Sources/AWSLambdaDeploymentDescriptor"
         ),
 
         // JSON Schema Generator
@@ -37,8 +36,7 @@ let package = Package(
                 .product(name: "Logging", package: "swift-log"),
             ],
             path: "Sources/AWSLambdaDeploymentDescriptorGenerator",
-            exclude: ["Generated", "Resources"],
-            swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
+            exclude: ["Generated", "Resources"]
         ),
 
         .plugin(
@@ -55,8 +53,7 @@ let package = Package(
             name: "AWSLambdaDeploymentDescriptorTests",
             dependencies: [
                 .byName(name: "AWSLambdaDeploymentDescriptor"),
-            ],
-            swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
+            ]
         ),
 
         // test the SAM JSON Schema reader
@@ -64,8 +61,7 @@ let package = Package(
             name: "AWSLambdaDeploymentDescriptorGeneratorTests",
             dependencies: [
                 .byName(name: "AWSLambdaDeploymentDescriptorGenerator"),
-            ],
-            swiftSettings: [.enableExperimentalFeature("StrictConcurrency=complete")]
+            ]
         ),
     ]
 )
