@@ -16,8 +16,8 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-syntax.git", branch: "main"),
-        .package(url: "https://github.com/jpsim/Yams.git", from: "5.1.2"),
-        .package(url: "https://github.com/apple/swift-log.git", from: "1.4.0"),
+        .package(url: "https://github.com/jpsim/Yams.git", from: "5.1.3"),
+        .package(url: "https://github.com/apple/swift-log.git", from: "1.6.1"),
     ],
     targets: [
         .target(
