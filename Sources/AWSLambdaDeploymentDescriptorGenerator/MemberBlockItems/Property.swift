@@ -55,7 +55,7 @@ extension DeploymentDescriptorGenerator {
                                                                with: objectValue.properties ?? [:], isRequired: type.required)
                     memberDecls.append(MemberBlockItemListSyntax { addLeadingTrivia(to: structDecl) })
 
-                } else if let stringValue = jsonType.stringSchema() {
+                } else if let _ = jsonType.stringSchema() {
                     swiftType = "[\(jsonType.swiftType(for: name))]"
                 }
             } else {
