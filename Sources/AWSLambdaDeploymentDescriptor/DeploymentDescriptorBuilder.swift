@@ -501,7 +501,7 @@ public protocol CommandLineArgsFinderProtocol {
 
 public struct CommandLineArgsFinder: CommandLineArgsFinderProtocol {
     public init() {}
-    public func args() -> [String] { CommandLine.arguments }
+    public func args() -> [String]{ ProcessInfo.processInfo.arguments }
 }
 
 // MARK: Url Config Cors DSL code
