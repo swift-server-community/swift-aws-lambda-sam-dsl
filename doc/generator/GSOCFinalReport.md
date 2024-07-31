@@ -28,10 +28,6 @@ Here’s what I accomplished:
 These activities helped me become familiar with the overall architecture of the project, SwiftPM plugins, and Swift command line tools.
 
 
-![diagram](/assets/img/projectScope.png){: w="550" h="250" }
-
-Diagram of the project scope, provided by my mentor, Sébastien Stormacq
-
 
 ## Week 3 & 4:
 
