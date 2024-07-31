@@ -106,6 +106,7 @@ extension DeploymentDescriptorGenerator {
                         parameters: EnumCaseParameterListSyntax {
                             EnumCaseParameterSyntax(
                                 type: TypeSyntax(IdentifierTypeSyntax(name: .identifier(type)))
+//                                TypeSyntax(IdentifierTypeSyntax(name: .identifier(StringLiteralExprSyntax)))
                             )
                         }
                     )
