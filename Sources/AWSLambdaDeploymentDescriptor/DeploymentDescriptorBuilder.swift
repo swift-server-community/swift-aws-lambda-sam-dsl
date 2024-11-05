@@ -833,8 +833,13 @@ extension SAMDeploymentDescriptor {
   }
 
   internal func toYAML() -> String {
-    let encoder = YAMLEncoder()
+    let encoder = Yams.YAMLEncoder()
     return try! encoder.encode(self)
+    // let encoder = YAMLEncoder()
+    // encoder.keyEncodingStrategy = .camelCase
+    // let yaml = try! encoder.encode(self)
+
+    // return String(decoding: yaml, as: UTF8.self)
   }
 }
 
@@ -842,14 +847,21 @@ extension SAMDeploymentDescriptor {
 // https://github.com/apple/swift-package-manager/blob/e16b9978c83699a8d6be7b490ea0191a64151c79/Sources/PackageDescription/PackageDescription.swift#L532C1-L541C2
 
 // this is called from the main thread in the context of a command-line tool only
-private nonisolated(unsafe)var dd: SAMDeploymentDescriptor?
-private func dumpPackageAtExit(_: SAMDeploymentDescriptor) {
+#if swift(>=6.0)
+private nonisolated(unsafe) var _deploymentDescriptor: SAMDeploymentDescriptor?
+#else 
+private var _deploymentDescriptor: SAMDeploymentDescriptor?
+#endif
+
+private func dumpPackageAtExit(_ deploymentDescriptor: SAMDeploymentDescriptor) {
   func dump() {
-    guard let dd else { return }
+    guard let _deploymentDescriptor else { return }
     do {
-      try DeploymentDescriptorSerializer.serialize(dd, format: .yaml)
+      print("dumpPackageAtExit - do it")
+      try DeploymentDescriptorSerializer.serialize(_deploymentDescriptor, format: .yaml)
     } catch {}
   }
+  _deploymentDescriptor = deploymentDescriptor
   atexit(dump)
 }
 
