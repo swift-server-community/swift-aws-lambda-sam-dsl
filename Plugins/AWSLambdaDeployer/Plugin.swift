@@ -134,15 +134,10 @@ struct AWSLambdaDeployer: CommandPlugin {
         print("Compile shared library")
         print("-------------------------------------------------------------------------")
 
-        let cmd = [ "swift", "build",
-                    "-c", buildConfiguration.rawValue,
-                    "--product", "AWSLambdaDeploymentDescriptor"]
-
-        try Utils.execute(executable: swiftExecutable,
-                          arguments: Array(cmd.dropFirst()),
-                          customWorkingDirectory: projectDirectory,
-                          logLevel: verboseLogging ? .debug : .silent)
-
+        let _ = try packageManager.build(
+            .product("AWSLambdaDeploymentDescriptor"),
+            parameters: .init(configuration: .release, echoLogs: true)
+        )
     }
 
     private func generateDeploymentDescriptor(projectDirectory: URL,
@@ -162,20 +157,20 @@ struct AWSLambdaDeployer: CommandPlugin {
         // this generates the SAM deployment descriptor
         //
         let deploymentDescriptorFileName = "Deploy.swift"
-        let deploymentDescriptorFilePath = "\(projectDirectory)/\(deploymentDescriptorFileName)"
-        let sharedLibraryName = "AWSLambdaDeploymentDescriptor" // provided by the swift lambda runtime
+        let deploymentDescriptorFilePath = "\(projectDirectory.path())/\(deploymentDescriptorFileName)"
         
         // Check if Deploy.swift exists. Stop when it does not exist.
         guard FileManager.default.fileExists(atPath: deploymentDescriptorFilePath) else {
-            print("`Deploy.Swift` file not found in directory \(projectDirectory)")
+            Diagnostics.error("`Deploy.Swift` file not found in directory \(projectDirectory)")
             throw DeployerPluginError.deployswiftDoesNotExist
         }
         
         do {
+            let sharedLibraryName = "AWSLambdaDeploymentDescriptor" // provided by the swift lambda runtime
             var cmd = [
-                "\"\(swiftExecutable.absoluteString)\"",
-                "-L \(projectDirectory)/.build/\(buildConfiguration)/",
-                "-I \(projectDirectory)/.build/\(buildConfiguration)/",
+                "\"\(swiftExecutable.path())\"",
+                "-L \(projectDirectory.path())/.build/\(buildConfiguration)/",
+                "-I \(projectDirectory.path())/.build/\(buildConfiguration)/",
                 "-l\(sharedLibraryName)",
                 "\"\(deploymentDescriptorFilePath)\""
             ]
@@ -627,4 +622,3 @@ private enum DeployerPluginError: Error, CustomStringConvertible {
         }
     }
 }
-
