@@ -25,19 +25,20 @@ let package = Package(
   products: [
     .executable(name: "HttpApiLambda", targets: ["HttpApiLambda"]),
     .executable(name: "SQSLambda", targets: ["SQSLambda"]),
-    .executable(name: "UrlLambda", targets: ["UrlLambda"])
+    .executable(name: "UrlLambda", targets: ["UrlLambda"]),
   ],
   dependencies: [
-    .package(url: "https://github.com/swift-server/swift-aws-lambda-runtime.git", from: "1.0.0-alpha.3"),
+    .package(
+      url: "https://github.com/swift-server/swift-aws-lambda-runtime.git", from: "1.0.0-alpha.3"),
     .package(url: "https://github.com/swift-server/swift-aws-lambda-events.git", branch: "main"),
-    .package(path: "../.."), 
+    .package(path: "../.."),
   ],
   targets: [
     .executableTarget(
       name: "HttpApiLambda",
       dependencies: [
         .product(name: "AWSLambdaRuntime", package: "swift-aws-lambda-runtime"),
-        .product(name: "AWSLambdaEvents", package: "swift-aws-lambda-events")
+        .product(name: "AWSLambdaEvents", package: "swift-aws-lambda-events"),
       ],
       path: "./HttpApiLambda"
     ),
@@ -45,7 +46,7 @@ let package = Package(
       name: "UrlLambda",
       dependencies: [
         .product(name: "AWSLambdaRuntime", package: "swift-aws-lambda-runtime"),
-        .product(name: "AWSLambdaEvents", package: "swift-aws-lambda-events")
+        .product(name: "AWSLambdaEvents", package: "swift-aws-lambda-events"),
       ],
       path: "./UrlLambda"
     ),
@@ -53,7 +54,7 @@ let package = Package(
       name: "SQSLambda",
       dependencies: [
         .product(name: "AWSLambdaRuntime", package: "swift-aws-lambda-runtime"),
-        .product(name: "AWSLambdaEvents", package: "swift-aws-lambda-events")
+        .product(name: "AWSLambdaEvents", package: "swift-aws-lambda-events"),
       ],
       path: "./SQSLambda"
     ),
@@ -63,12 +64,12 @@ let package = Package(
         "HttpApiLambda", "SQSLambda",
         .product(name: "AWSLambdaTesting", package: "swift-aws-lambda-runtime"),
       ],
-      // testing data 
+      // testing data
       resources: [
         .process("data/apiv2.json"),
-        .process("data/sqs.json")
+        .process("data/sqs.json"),
       ]
-    )
+    ),
   ]
 )
 

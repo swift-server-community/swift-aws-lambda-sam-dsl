@@ -119,7 +119,8 @@ public struct Function: BuilderResource {
     commandLineArgs: CommandLineArgsFinderProtocol = CommandLineArgsFinder()
   ) {
     var props = ServerlessFunctionProperties(
-      codeUri: try? Function.packagePath(name: name, codeUri: codeURI, commandLine: commandLineArgs),
+      codeUri: try? Function.packagePath(
+        name: name, codeUri: codeURI, commandLine: commandLineArgs),
       architecture: architecture,
       eventSources: eventSources,
       environment: environment.isEmpty ? nil : SAMEnvironmentVariable(environment)
@@ -161,7 +162,9 @@ public struct Function: BuilderResource {
   // 1. the --archive-path arg
   // 2. the developer supplied value in Function() definition
   // 3. a default value
-    internal static func packagePath(name: String, codeUri: String?, commandLine: CommandLineArgsFinderProtocol) throws -> String {
+  internal static func packagePath(
+    name: String, codeUri: String?, commandLine: CommandLineArgsFinderProtocol
+  ) throws -> String {
     // propose a default path unless the --archive-path argument was used
     // --archive-path argument value must match the value given to the archive plugin --output-path argument
     var lambdaPackage =
@@ -169,7 +172,7 @@ public struct Function: BuilderResource {
     if let path = codeUri {
       lambdaPackage = path
     }
-        let args = commandLine.args()
+    let args = commandLine.args()
     if let optIdx = args.firstIndex(of: "--archive-path") {
       if args.count >= optIdx + 1 {
         let archiveArg = args[optIdx + 1]
@@ -503,11 +506,11 @@ public struct Function: BuilderResource {
 
 // for testing
 public protocol CommandLineArgsFinderProtocol {
-    func args() -> [String]
+  func args() -> [String]
 }
 public struct CommandLineArgsFinder: CommandLineArgsFinderProtocol {
-    public init() {}
-    public func args() -> [String]{ ProcessInfo.processInfo.arguments }
+  public init() {}
+  public func args() -> [String] { ProcessInfo.processInfo.arguments }
 }
 
 // MARK: Url Config Cors DSL code
@@ -848,9 +851,9 @@ extension SAMDeploymentDescriptor {
 
 // this is called from the main thread in the context of a command-line tool only
 #if swift(>=6.0)
-private nonisolated(unsafe) var _deploymentDescriptor: SAMDeploymentDescriptor?
-#else 
-private var _deploymentDescriptor: SAMDeploymentDescriptor?
+  private nonisolated(unsafe) var _deploymentDescriptor: SAMDeploymentDescriptor?
+#else
+  private var _deploymentDescriptor: SAMDeploymentDescriptor?
 #endif
 
 private func dumpPackageAtExit(_ deploymentDescriptor: SAMDeploymentDescriptor) {

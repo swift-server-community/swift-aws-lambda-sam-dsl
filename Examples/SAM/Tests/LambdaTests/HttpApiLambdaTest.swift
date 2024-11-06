@@ -16,31 +16,32 @@ import AWSLambdaEvents
 import AWSLambdaRuntime
 import AWSLambdaTesting
 import XCTest
+
 @testable import HttpApiLambda
 
 class HttpApiLambdaTests: LambdaTest {
 
-    func testHttpAPiLambda() async throws {
+  func testHttpAPiLambda() async throws {
 
-            // given 
-            let eventData = try self.loadTestData(file: .apiGatewayV2)
-            let event = try JSONDecoder().decode(APIGatewayV2Request.self, from: eventData)
+    // given
+    let eventData = try self.loadTestData(file: .apiGatewayV2)
+    let event = try JSONDecoder().decode(APIGatewayV2Request.self, from: eventData)
 
-            do {
-                // when 
-                let result = try await Lambda.test(HttpApiLambda.self, with: event)
+    do {
+      // when
+      let result = try await Lambda.test(HttpApiLambda.self, with: event)
 
-                // then   
-                XCTAssertEqual(result.statusCode.code, 200)
-                XCTAssertNotNil(result.headers)
-                if let headers = result.headers {
-                    XCTAssertNotNil(headers["content-type"])
-                    if let contentType = headers["content-type"] {
-                        XCTAssertTrue(contentType == "application/json")
-                    }
-                }
-            } catch {
-                XCTFail("Lambda invocation should not throw error : \(error)")
-            }
+      // then
+      XCTAssertEqual(result.statusCode.code, 200)
+      XCTAssertNotNil(result.headers)
+      if let headers = result.headers {
+        XCTAssertNotNil(headers["content-type"])
+        if let contentType = headers["content-type"] {
+          XCTAssertTrue(contentType == "application/json")
         }
+      }
+    } catch {
+      XCTFail("Lambda invocation should not throw error : \(error)")
+    }
+  }
 }

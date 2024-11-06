@@ -18,23 +18,24 @@ import Foundation
 
 @main
 struct SQSLambda: LambdaHandler {
-    typealias Event = SQSEvent
-    typealias Output = Void
+  typealias Event = SQSEvent
+  typealias Output = Void
 
-    init() {}
-    init(context: LambdaInitializationContext) async throws {
-        context.logger.info(
-            "Log Level env var : \(ProcessInfo.processInfo.environment["LOG_LEVEL"] ?? "info" )")
+  init() {}
+  init(context: LambdaInitializationContext) async throws {
+    context.logger.info(
+      "Log Level env var : \(ProcessInfo.processInfo.environment["LOG_LEVEL"] ?? "info" )")
+  }
+
+  func handle(_ event: Event, context: AWSLambdaRuntimeCore.LambdaContext) async throws -> Output {
+
+    context.logger.info(
+      "Log Level env var : \(ProcessInfo.processInfo.environment["LOG_LEVEL"] ?? "not defined" )")
+    context.logger.debug("SQS Message received, with \(event.records.count) record")
+
+    for msg in event.records {
+      context.logger.debug("Message ID   : \(msg.messageId)")
+      context.logger.debug("Message body : \(msg.body)")
     }
-
-    func handle(_ event: Event, context: AWSLambdaRuntimeCore.LambdaContext) async throws -> Output {
-
-        context.logger.info("Log Level env var : \(ProcessInfo.processInfo.environment["LOG_LEVEL"] ?? "not defined" )" )
-        context.logger.debug("SQS Message received, with \(event.records.count) record")
-
-        for msg in event.records {
-            context.logger.debug("Message ID   : \(msg.messageId)")
-            context.logger.debug("Message body : \(msg.body)")
-        }
-    }
+  }
 }
