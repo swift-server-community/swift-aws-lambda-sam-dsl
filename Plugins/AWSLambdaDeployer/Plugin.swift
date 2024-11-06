@@ -28,7 +28,7 @@ struct AWSLambdaDeployer: CommandPlugin {
         
         // gather file paths
         #if swift(>=6.0)
-        let samDeploymentDescriptorFilePath = "\(context.package.directoryURL)/template.yaml"
+        let samDeploymentDescriptorFilePath = "\(context.package.directoryURL.path())template.yaml"
         #else
         let samDeploymentDescriptorFilePath = "\(context.package.directory)/template.yaml"
         #endif
@@ -136,7 +136,7 @@ struct AWSLambdaDeployer: CommandPlugin {
 
         let _ = try packageManager.build(
             .product("AWSLambdaDeploymentDescriptor"),
-            parameters: .init(configuration: .release, echoLogs: true)
+            parameters: .init(configuration: .inherit, echoLogs: true)
         )
     }
 
@@ -169,10 +169,10 @@ struct AWSLambdaDeployer: CommandPlugin {
             let sharedLibraryName = "AWSLambdaDeploymentDescriptor" // provided by the swift lambda runtime
             var cmd = [
                 "\"\(swiftExecutable.path())\"",
-                "-L \(projectDirectory.path())/.build/\(buildConfiguration)/",
-                "-I \(projectDirectory.path())/.build/\(buildConfiguration)/",
+                "-L\(projectDirectory.path()).build/\(buildConfiguration)/",
+                "-I\(projectDirectory.path()).build/\(buildConfiguration)/Modules",
                 "-l\(sharedLibraryName)",
-                "\"\(deploymentDescriptorFilePath)\""
+                "\(deploymentDescriptorFilePath)"
             ]
             if let archive = archivePath {
                 cmd = cmd + ["--archive-path", archive]
@@ -186,25 +186,12 @@ struct AWSLambdaDeployer: CommandPlugin {
                 print("Swift command:\n\n\(helperCmd)\n")
             }
             
-            // create and execute a plugin helper to run the "swift" command
-            let helperFilePath = "\(FileManager.default.temporaryDirectory.path)/compile.sh"
-            FileManager.default.createFile(atPath: helperFilePath,
-                                           contents: helperCmd.data(using: .utf8),
-                                           attributes: [.posixPermissions: 0o755])
-            defer { try? FileManager.default.removeItem(atPath: helperFilePath) }                                           
-
-            // running the swift command directly from the plugin does not work 🤷‍♂️
-            // the below launches a bash shell script that will launch the `swift` command
-            let samDeploymentDescriptor = try Utils.execute(
-                executable: shellExecutable,
-                arguments: ["-c", helperFilePath],
-                customWorkingDirectory: projectDirectory,
-                logLevel: verboseLogging ? .debug : .silent)
-        //    let samDeploymentDescriptor = try Utils.execute(
-        //        executable: swiftExecutable,
-        //        arguments: Array(cmd.dropFirst()),
-        //        customWorkingDirectory: projectDirectory,
-        //        logLevel: verboseLogging ? .debug : .silent)
+            // launch the command to compile and execute Deploy.swift
+           let samDeploymentDescriptor = try Utils.execute(
+               executable: swiftExecutable,
+               arguments: Array(cmd.dropFirst()),
+               customWorkingDirectory: projectDirectory,
+               logLevel: verboseLogging ? .debug : .silent)
             
             // write the generated SAM deployment descriptor to disk
             if FileManager.default.fileExists(atPath: samDeploymentDescriptorFilePath) && !force {
@@ -289,7 +276,7 @@ struct AWSLambdaDeployer: CommandPlugin {
                                             force: Bool,
                                             verboseLogging: Bool) throws {
         
-        let samConfigFilePath = "\(projetDirectory)/samconfig.toml" // the default value for SAM
+        let samConfigFilePath = "\(projetDirectory.path())samconfig.toml" // the default value for SAM
         let samConfigTemplate = """
 version = 0.1
 [\(buildConfiguration)]
